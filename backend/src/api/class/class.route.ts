@@ -12,6 +12,10 @@ router
   .get(asyncHandler(classController.getAllClasses))
   .post(asyncHandler(classController.createClass));
 
-router.route("/:slug").get(asyncHandler(classController.getClassBySlug));
+router
+  .route("/:slug")
+  .get(asyncHandler(classController.getClassBySlug))
+  .put(asyncHandler(classController.updateClass))
+  .delete(asyncHandler(classController.deleteClass));
 
 export default router;

@@ -51,6 +51,62 @@ class ClassService {
     const newClass = await prisma.class.create({ data: { name, slug } });
     return new ClassDto(newClass);
   }
+
+  async updateClass(slug: string, data: ICreateClass): Promise<ClassDto> {
+    const { name } = data;
+
+    const classToUpdate = await prisma.class.findUnique({
+      where: { slug },
+    });
+
+    if (!classToUpdate) {
+      throw new ApiError(404, "Class not found");
+    }
+
+    if (!name || name.trim() === "") {
+      throw new ApiError(400, "New class name is required");
+    }
+
+    const newSlug = slugify(name);
+
+    // Check if the new name or slug already exists in another record
+    const existingClass = await prisma.class.findFirst({
+      where: {
+        NOT: {
+          id: classToUpdate.id, // Exclude the current class from the search
+        },
+        OR: [
+          { name: { equals: name, mode: "insensitive" } },
+          { slug: { equals: newSlug, mode: "insensitive" } },
+        ],
+      },
+    });
+
+    if (existingClass) {
+      throw new ApiError(409, `A class with this name or slug already exists`);
+    }
+
+    const updatedClass = await prisma.class.update({
+      where: { slug },
+      data: { name, slug: newSlug },
+    });
+
+    return new ClassDto(updatedClass);
+  }
+
+  async deleteClass(slug: string): Promise<ClassDto> {
+    const classToDelete = await prisma.class.findUnique({
+      where: { slug },
+    });
+
+    if (!classToDelete) {
+      throw new ApiError(404, "Class not found");
+    }
+
+    await prisma.class.delete({ where: { slug } });
+
+    return new ClassDto(classToDelete);
+  }
 }
 
 export default ClassService;

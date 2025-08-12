@@ -13,6 +13,10 @@ router
   .get(asyncHandler(subjectController.getAllSubjects))
   .post(asyncHandler(subjectController.createSubject));
 
-router.route("/:slug").get(asyncHandler(subjectController.getSubjectBySlug));
+router
+  .route("/:slug")
+  .get(asyncHandler(subjectController.getSubjectBySlug))
+  .put(asyncHandler(subjectController.updateSubject))
+  .delete(asyncHandler(subjectController.deleteSubject));
 
 export default router;

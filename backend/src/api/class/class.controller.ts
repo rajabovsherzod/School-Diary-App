@@ -29,6 +29,23 @@ export class ClassController {
       .status(201)
       .json(new ApiResponse(newClass, "Class created successfully"));
   };
+
+  updateClass = async (req: Request, res: Response) => {
+    const { slug } = req.params;
+    const classData = req.body;
+    const updatedClass = await this.classService.updateClass(slug, classData);
+    res
+      .status(200)
+      .json(new ApiResponse(updatedClass, "Class updated successfully"));
+  };
+
+  deleteClass = async (req: Request, res: Response) => {
+    const { slug } = req.params;
+    const deletedClass = await this.classService.deleteClass(slug);
+    res
+      .status(200)
+      .json(new ApiResponse(deletedClass, "Class deleted successfully"));
+  };
 }
 
 export default ClassController;

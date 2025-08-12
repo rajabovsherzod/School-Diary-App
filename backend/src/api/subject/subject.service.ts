@@ -50,6 +50,64 @@ class SubjectService {
     const newSubject = await prisma.subject.create({ data: { name, slug } });
     return new SubjectDto(newSubject);
   }
+
+  async updateSubject(slug: string, data: ICreateSubject): Promise<SubjectDto> {
+    const { name } = data;
+
+    const subjectToUpdate = await prisma.subject.findUnique({
+      where: { slug },
+    });
+
+    if (!subjectToUpdate) {
+      throw new ApiError(404, "Subject not found");
+    }
+
+    if (!name || name.trim() === "") {
+      throw new ApiError(400, "New subject name is required");
+    }
+
+    const newSlug = slugify(name);
+
+    const existingSubject = await prisma.subject.findFirst({
+      where: {
+        NOT: {
+          id: subjectToUpdate.id,
+        },
+        OR: [
+          { name: { equals: name, mode: "insensitive" } },
+          { slug: { equals: newSlug, mode: "insensitive" } },
+        ],
+      },
+    });
+
+    if (existingSubject) {
+      throw new ApiError(
+        409,
+        `A subject with this name or slug already exists`
+      );
+    }
+
+    const updatedSubject = await prisma.subject.update({
+      where: { slug },
+      data: { name, slug: newSlug },
+    });
+
+    return new SubjectDto(updatedSubject);
+  }
+
+  async deleteSubject(slug: string): Promise<SubjectDto> {
+    const subjectToDelete = await prisma.subject.findUnique({
+      where: { slug },
+    });
+
+    if (!subjectToDelete) {
+      throw new ApiError(404, "Subject not found");
+    }
+
+    await prisma.subject.delete({ where: { slug } });
+
+    return new SubjectDto(subjectToDelete);
+  }
 }
 
 export default SubjectService;
