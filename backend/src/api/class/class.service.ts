@@ -24,10 +24,16 @@ class ClassService {
   }
 
   async createClass(data: ICreateClass): Promise<ClassDto> {
-    const { name } = data;
+    const { name, teacher, studentCount } = data;
 
     if (!name || name.trim() === "") {
       throw new ApiError(400, "Class name is required");
+    }
+    if (!teacher || teacher.trim() === "") {
+      throw new ApiError(400, "Teacher name is required");
+    }
+    if (!studentCount || studentCount <= 0) {
+      throw new ApiError(400, "Student count must be a positive number");
     }
 
     const slug = slugify(name);
@@ -48,13 +54,16 @@ class ClassService {
       throw new ApiError(409, `Class with slug '${slug}' already exists`);
     }
 
-    const newClass = await prisma.class.create({ data: { name, slug } });
+    const newClass = await prisma.class.create({
+      data: { name, slug, teacher, studentCount },
+    });
     return new ClassDto(newClass);
   }
 
-  async updateClass(slug: string, data: ICreateClass): Promise<ClassDto> {
-    const { name } = data;
-
+  async updateClass(
+    slug: string,
+    data: Partial<ICreateClass>
+  ): Promise<ClassDto> {
     const classToUpdate = await prisma.class.findUnique({
       where: { slug },
     });
@@ -63,32 +72,47 @@ class ClassService {
       throw new ApiError(404, "Class not found");
     }
 
-    if (!name || name.trim() === "") {
-      throw new ApiError(400, "New class name is required");
+    const { name, teacher, studentCount } = data;
+    const updateData: { [key: string]: any } = {};
+
+    if (name) {
+      updateData.name = name;
+      const newSlug = slugify(name);
+      updateData.slug = newSlug;
+
+      const existingClass = await prisma.class.findFirst({
+        where: {
+          NOT: { id: classToUpdate.id },
+          OR: [
+            { name: { equals: name, mode: "insensitive" } },
+            { slug: { equals: newSlug, mode: "insensitive" } },
+          ],
+        },
+      });
+
+      if (existingClass) {
+        throw new ApiError(
+          409,
+          `A class with this name or slug already exists`
+        );
+      }
     }
 
-    const newSlug = slugify(name);
+    if (teacher) {
+      updateData.teacher = teacher;
+    }
 
-    // Check if the new name or slug already exists in another record
-    const existingClass = await prisma.class.findFirst({
-      where: {
-        NOT: {
-          id: classToUpdate.id, // Exclude the current class from the search
-        },
-        OR: [
-          { name: { equals: name, mode: "insensitive" } },
-          { slug: { equals: newSlug, mode: "insensitive" } },
-        ],
-      },
-    });
+    if (studentCount) {
+      updateData.studentCount = studentCount;
+    }
 
-    if (existingClass) {
-      throw new ApiError(409, `A class with this name or slug already exists`);
+    if (Object.keys(updateData).length === 0) {
+      throw new ApiError(400, "No fields to update");
     }
 
     const updatedClass = await prisma.class.update({
       where: { slug },
-      data: { name, slug: newSlug },
+      data: updateData,
     });
 
     return new ClassDto(updatedClass);

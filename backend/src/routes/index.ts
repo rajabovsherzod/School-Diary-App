@@ -1,10 +1,15 @@
 import { Router } from "express";
 import classRouter from "@/api/class/class.route";
 import subjectRouter from "@/api/subject/subject.route";
+import classSubjectRouter from "@/api/class-subject/class-subject.route";
+import scheduleRouter from "@/api/schedule/schedule.route";
 
-const router = Router();
+const mainRouter = Router();
 
-router.use("/classes", classRouter);
-router.use("/subjects", subjectRouter);
+mainRouter.use("/classes", classRouter);
 
-export default router;
+mainRouter.use("/subjects", subjectRouter);
+mainRouter.use("/class-subjects", classSubjectRouter);
+mainRouter.use("/schedules", scheduleRouter);
+
+export default mainRouter;

@@ -18,6 +18,8 @@ model Class {
   id        Int      @id @default(autoincrement())
   name      String   @unique
   slug      String   @unique
+  teacher   String
+  studentCount Int
   createdAt DateTime @default(now())
 
   subjects ClassSubject[]
@@ -43,6 +45,7 @@ model ClassSubject {
   classId      Int
   subjectId    Int
   hoursPerWeek Int
+  scheduleDiff Int @default(0) // Yangi maydon: Jadvaldagi soatlar bilan farq
 
   class   Class   @relation(fields: [classId], references: [id])
   subject Subject @relation(fields: [subjectId], references: [id])
@@ -64,3 +67,5 @@ model ScheduleEntry {
   @@unique([classId, dayOfWeek, lessonNumber])
   @@map("schedule_entries")
 }
+
+

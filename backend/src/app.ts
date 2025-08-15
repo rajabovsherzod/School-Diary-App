@@ -1,15 +1,18 @@
-import express, { Express, Request, Response } from "express";
+import express, { Express } from "express";
+import cors from "cors";
 import mainRouter from "@/routes/index";
 import errorHandler from "@/middlewares/error.middleware";
 
 const app: Express = express();
 
-// Middlewares
-app.use(express.json());
+const corsOptions = {
+  origin: process.env.CLIENT_URL || "http://localhost:3000",
+  optionsSuccessStatus: 200,
+};
 
-app.get("/", (req: Request, res: Response) => {
-  res.send("Hello from Kundalik Backend!");
-});
+// Middlewares
+app.use(cors(corsOptions));
+app.use(express.json());
 
 // API Routes
 app.use("/api", mainRouter);

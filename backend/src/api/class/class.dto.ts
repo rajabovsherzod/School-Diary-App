@@ -4,10 +4,14 @@ export class ClassDto {
   id: number;
   name: string;
   slug: string;
+  teacher: string;
+  studentCount: number;
 
-  constructor(klass: Class) {
-    this.id = klass.id;
-    this.name = klass.name;
-    this.slug = klass.slug;
+  constructor(data: Class) {
+    this.id = data.id;
+    this.name = data.name;
+    this.slug = data.slug;
+    this.teacher = data.teacher;
+    this.studentCount = data.studentCount;
   }
 }

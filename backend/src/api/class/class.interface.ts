@@ -1,3 +1,5 @@
 export interface ICreateClass {
-    name: string;
+  name: string;
+  teacher: string;
+  studentCount: number;
 }
