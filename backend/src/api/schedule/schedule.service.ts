@@ -38,12 +38,6 @@ class ScheduleService {
       },
     });
 
-    // DIAGNOSTIKA: Ma'lumotlar bazasidan nima qaytganini tekshiramiz
-    console.log(
-      `[ScheduleService] Found class data for slug '${slug}':`,
-      JSON.stringify(classData, null, 2)
-    );
-
     if (!classData) {
       return null;
     }
@@ -144,6 +138,10 @@ class ScheduleService {
   public async moveOrSwapEntry(
     payload: IMoveOrSwapPayload
   ): Promise<IGenericSuccessMessage> {
+    console.log(
+      "Backend Service -> Received payload:",
+      JSON.stringify(payload, null, 2)
+    ); // Batafsil log
     return prisma.$transaction(async (tx) => {
       const { classSlug, targetDay, targetLesson, source } = payload;
 
@@ -154,26 +152,41 @@ class ScheduleService {
         throw new ApiError(404, `Class with slug '${classSlug}' not found`);
       }
       const classId = classInfo.id;
-
-      const targetEntry = await tx.scheduleEntry.findFirst({
-        where: { classId, dayOfWeek: targetDay, lessonNumber: targetLesson },
-      });
+      console.log(`Backend Service -> Found classId: ${classId}`); // Log
 
       // 1-holat: Jadvaldagi darsni ko'chirish yoki almashtirish
       if (source.type === "scheduled") {
         const sourceEntry = await tx.scheduleEntry.findUnique({
           where: { id: source.id },
         });
-        if (!sourceEntry)
-          throw new ApiError(404, "Source schedule entry not found");
-        if (sourceEntry.classId !== classId)
+        console.log(
+          "Backend Service -> Found sourceEntry:",
+          JSON.stringify(sourceEntry, null, 2)
+        ); // Log
+
+        if (!sourceEntry || sourceEntry.classId !== classId) {
           throw new ApiError(
-            400,
-            "Source entry does not belong to the target class."
+            404,
+            "Source schedule entry not found or mismatch"
           );
+        }
+
+        console.log(
+          `Backend Service -> Searching for target at day: ${targetDay}, lesson: ${targetLesson}`
+        ); // Log
+        const targetEntry = await tx.scheduleEntry.findFirst({
+          where: { classId, dayOfWeek: targetDay, lessonNumber: targetLesson },
+        });
+        console.log(
+          "Backend Service -> Found targetEntry:",
+          JSON.stringify(targetEntry, null, 2)
+        ); // ENG MUHIM LOG
 
         // Agar boriladigan joy bo'sh bo'lsa, shunchaki ko'chiramiz
         if (!targetEntry) {
+          console.log(
+            "Backend Service -> Target not found. Attempting to MOVE entry."
+          ); // Log
           await tx.scheduleEntry.update({
             where: { id: source.id },
             data: { dayOfWeek: targetDay, lessonNumber: targetLesson },
@@ -182,64 +195,54 @@ class ScheduleService {
         }
 
         // Agar boriladigan joyda boshqa dars bo'lsa, o'rin almashtiramiz
-        await tx.scheduleEntry.update({
-          where: { id: targetEntry.id },
-          data: {
-            dayOfWeek: sourceEntry.dayOfWeek,
-            lessonNumber: sourceEntry.lessonNumber,
-          },
-        });
+        // YAKUNIY YECHIM: Ikkala yozuvning fan ID'larini bitta tranzaksiyada almashtiramiz.
+        // Bu har qanday "Unique Constraint" xatosining oldini oladi.
+        const sourceSubjectId = sourceEntry.subjectId;
+        const targetSubjectId = targetEntry.subjectId;
+
+        console.log(
+          `Backend Service -> Target found. Attempting to SWAP subjects: ${sourceSubjectId} <-> ${targetSubjectId}`
+        ); // Log
+        // Tranzaksiya ichida ikkita mustaqil yangilanish
         await tx.scheduleEntry.update({
           where: { id: source.id },
-          data: { dayOfWeek: targetDay, lessonNumber: targetLesson },
+          data: { subjectId: targetSubjectId },
         });
+
+        await tx.scheduleEntry.update({
+          where: { id: targetEntry.id },
+          data: { subjectId: sourceSubjectId },
+        });
+
         return { message: "Lessons swapped successfully." };
       }
 
       // 2-holat: Yon paneldan yangi darsni jadvalga joylashtirish
       if (source.type === "unscheduled") {
         const subjectId = source.id;
-        const classSubject = await tx.classSubject.findUnique({
-          where: { classId_subjectId: { classId, subjectId } },
+        const targetEntry = await tx.scheduleEntry.findFirst({
+          where: { classId, dayOfWeek: targetDay, lessonNumber: targetLesson },
         });
-        if (!classSubject || classSubject.scheduleDiff <= 0) {
-          throw new ApiError(400, "No available hours for this subject.");
+
+        // Agar boriladigan joy band bo'lsa, xatolik qaytaramiz (bu holatda surish logikasi yo'q)
+        if (targetEntry) {
+          throw new ApiError(400, "Target cell is already occupied.");
         }
 
-        // Agar boriladigan joy bo'sh bo'lsa, shunchaki yaratamiz
-        if (!targetEntry) {
-          await tx.scheduleEntry.create({
-            data: {
-              classId,
-              subjectId,
-              dayOfWeek: targetDay,
-              lessonNumber: targetLesson,
-            },
-          });
-        } else {
-          // Agar band bo'lsa, mavjud darslarni bitta pastga surib, bo'shagan joyga yaratamiz
-          await tx.scheduleEntry.updateMany({
-            where: {
-              classId,
-              dayOfWeek: targetDay,
-              lessonNumber: { gte: targetLesson },
-            },
-            data: { lessonNumber: { increment: 1 } },
-          });
-          await tx.scheduleEntry.create({
-            data: {
-              classId,
-              subjectId,
-              dayOfWeek: targetDay,
-              lessonNumber: targetLesson,
-            },
-          });
-        }
+        await tx.scheduleEntry.create({
+          data: {
+            classId,
+            subjectId,
+            dayOfWeek: targetDay,
+            lessonNumber: targetLesson,
+          },
+        });
 
         await tx.classSubject.update({
           where: { classId_subjectId: { classId, subjectId } },
           data: { scheduleDiff: { decrement: 1 } },
         });
+
         return { message: "Lesson placed successfully." };
       }
 
@@ -255,7 +258,9 @@ class ScheduleService {
     entryId: number
   ): Promise<IGenericSuccessMessage> {
     return prisma.$transaction(async (tx) => {
-      const classInfo = await tx.class.findUnique({ where: { slug: classSlug } });
+      const classInfo = await tx.class.findUnique({
+        where: { slug: classSlug },
+      });
       if (!classInfo) {
         throw new ApiError(404, `Class with slug '${classSlug}' not found`);
       }
@@ -265,7 +270,10 @@ class ScheduleService {
       });
 
       if (!entryToDelete) {
-        throw new ApiError(404, `Schedule entry with ID ${entryId} not found in this class`);
+        throw new ApiError(
+          404,
+          `Schedule entry with ID ${entryId} not found in this class`
+        );
       }
 
       await this.updateSubjectDebtOnDelete(

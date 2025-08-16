@@ -6,9 +6,11 @@ import { useGetScheduleBySlug } from "@/hooks/queries/use-schedule-queries";
 import { useGenerateScheduleBySlug } from "@/hooks/mutations/use-schedule-mutations";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { ScheduleTable } from "@/components/schedule/schedule-table";
+import { ResponsiveSchedule } from "@/components/schedule/responsive-schedule";
 import { ConfirmationDialog } from "@/components/schedule/confirmation-dialog";
 import { TApiError } from "@/types/api-error";
+import { ScheduleHeader } from "@/components/schedule/schedule-header";
+import { CalendarPlus } from "lucide-react";
 
 // YECHIM: Komponent endi props qabul qilmaydi
 const SchedulePage = () => {
@@ -49,13 +51,29 @@ const SchedulePage = () => {
 
   return (
     <div className="container mx-auto p-4">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">
-          {scheduleData?.class?.name || slug} uchun dars jadvali
-        </h1>
-        <Button onClick={() => setConfirmOpen(true)} disabled={isGenerating}>
-          {isGenerating ? "Yaratilmoqda..." : "Jadvalni yaratish"}
-        </Button>
+      <div className="mb-4">
+        <ScheduleHeader
+          title={`${scheduleData?.class?.name || slug} uchun dars jadvali`}
+        >
+          {/* Mobil uchun faqat ikonka ko'rsatadigan tugma */}
+          <Button
+            onClick={() => setConfirmOpen(true)}
+            disabled={isGenerating}
+            size="icon"
+            className="sm:hidden"
+          >
+            <CalendarPlus className="h-4 w-4" />
+          </Button>
+          {/* Katta ekranlar uchun matn va ikonka ko'rsatadigan tugma */}
+          <Button
+            onClick={() => setConfirmOpen(true)}
+            disabled={isGenerating}
+            className="hidden sm:flex"
+          >
+            <CalendarPlus className="h-4 w-4 mr-2" />
+            {isGenerating ? "Yaratilmoqda..." : "Jadvalni yaratish"}
+          </Button>
+        </ScheduleHeader>
       </div>
 
       <ConfirmationDialog
@@ -69,7 +87,10 @@ const SchedulePage = () => {
 
       {/* XATO TUZATILDI: `schedule` o'rniga `scheduleEntries` ishlatilmoqda */}
       {scheduleData && scheduleData.scheduleEntries.length > 0 ? (
-        <ScheduleTable entries={scheduleData.scheduleEntries} slug={slug} />
+        <ResponsiveSchedule
+          entries={scheduleData.scheduleEntries}
+          slug={slug}
+        />
       ) : (
         <div className="text-center py-10 border-2 border-dashed rounded-lg">
           <p className="text-gray-500">

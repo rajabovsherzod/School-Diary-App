@@ -25,6 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { EntryCell } from "./schedule-entry-cell";
 
 interface ScheduleTableProps {
   entries: IScheduleEntry[];
@@ -41,30 +42,7 @@ const days = [
 ];
 const dayChunks = [days.slice(0, 3), days.slice(3, 6)];
 
-// Dars yacheykasi uchun komponent
-const EntryCell = ({ entry }: { entry: IScheduleEntry }) => {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: entry.id.toString(),
-    data: { entry, type: "entry" },
-  });
-
-  return (
-    <div
-      ref={setNodeRef}
-      {...listeners}
-      {...attributes}
-      className={cn(
-        "h-full w-full flex items-center justify-center p-1 text-center text-sm font-medium cursor-grab select-none",
-        "bg-white hover:bg-gray-50 transition-colors duration-150 rounded-sm",
-        isDragging && "opacity-0" // Sudralayotganda asl elementni yashirish
-      )}
-    >
-      {entry.subject.name}
-    </div>
-  );
-};
-
-// Bo'sh yacheyka uchun komponent
+// Bo'sh yacheyka uchun komponent shu yerda qoladi
 const EmptyCell = ({ id }: { id: string }) => {
   const { setNodeRef, isOver } = useDroppable({ id, data: { type: "empty" } });
 
@@ -110,21 +88,45 @@ export const ScheduleTable = ({ entries, slug }: ScheduleTableProps) => {
     setActiveEntry(null);
     const { active, over } = event;
 
-    if (over && over.data.current?.type === "empty" && active.id !== over.id) {
-      const sourceId = parseInt(active.id as string, 10);
-      const [targetDay, targetLesson] = (over.id as string)
-        .split("-")
-        .map(Number);
+    // Agar sudrash bekor qilinsa yoki element o'z joyiga qaytarilsa, hech narsa qilmaymiz
+    if (!over || active.id === over.id) {
+      return;
+    }
 
-      if (!isNaN(sourceId) && !isNaN(targetDay) && !isNaN(targetLesson)) {
-        moveOrSwap({
-          classSlug: slug,
-          source: { type: "scheduled", id: sourceId },
-          targetDay,
-          targetLesson,
-          currentEntries: entries, // Optimistik yangilanish uchun
-        });
-      }
+    const sourceType = active.data.current?.type;
+    const overType = over.data.current?.type;
+
+    // Faqat jadvaldagi darsni sudraganda ishlaydi
+    if (sourceType !== "entry") {
+      return;
+    }
+
+    const sourceId = parseInt(active.id as string, 10);
+    let targetDay: number;
+    let targetLesson: number;
+
+    // Holat 1: Darsni boshqa dars ustiga tashlash (SWAP)
+    if (overType === "entry") {
+      const targetEntry = over.data.current?.entry as IScheduleEntry;
+      targetDay = targetEntry.dayOfWeek;
+      targetLesson = targetEntry.lessonNumber;
+    }
+    // Holat 2: Darsni bo'sh katakka tashlash (MOVE)
+    else if (overType === "empty") {
+      [targetDay, targetLesson] = (over.id as string).split("-").map(Number);
+    }
+    // Boshqa holatlar uchun chiqib ketamiz
+    else {
+      return;
+    }
+
+    if (!isNaN(sourceId) && !isNaN(targetDay) && !isNaN(targetLesson)) {
+      moveOrSwap({
+        classSlug: slug,
+        source: { type: "scheduled", id: sourceId },
+        targetDay,
+        targetLesson,
+      });
     }
   };
 
@@ -153,10 +155,10 @@ export const ScheduleTable = ({ entries, slug }: ScheduleTableProps) => {
               key={chunkIndex}
               className="overflow-hidden rounded-lg border shadow-sm"
             >
-              <Table className="bg-white border-collapse">
+              <Table className="w-full table-fixed border-collapse bg-white">
                 <TableHeader>
                   <TableRow className="hover:bg-primary/90">
-                    <TableHead className="w-28 text-center bg-primary text-primary-foreground font-semibold border-b border-r">
+                    <TableHead className="w-28 border-b border-r bg-primary text-center font-semibold text-primary-foreground">
                       Dars vaqti
                     </TableHead>
                     {chunk.map((day, dayIdx) => (

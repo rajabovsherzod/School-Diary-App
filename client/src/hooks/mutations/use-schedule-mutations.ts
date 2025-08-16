@@ -11,8 +11,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { TApiError } from "@/types/api-error";
 
-// Keshdagi ma'lumot turini aniqlash uchun
-type TScheduleQueryData = IScheduleEntry[] | { entries: IScheduleEntry[] };
+// YECHIM: Keshdagi ma'lumotlar uchun to'g'ri tipni aniqlaymiz
+interface TScheduleQueryData {
+  scheduleEntries: IScheduleEntry[];
+  classSubjects: unknown[];
+}
 
 export const useGenerateScheduleBySlug = () => {
   const queryClient = useQueryClient();
@@ -32,24 +35,19 @@ export const useGenerateScheduleBySlug = () => {
   });
 };
 
-interface IMoveOrSwapOptimistic extends IMoveOrSwapPayload {
-  currentEntries: IScheduleEntry[];
-}
-
 export const useMoveOrSwapEntry = () => {
   const queryClient = useQueryClient();
 
   return useMutation<
     IGenericSuccessMessage,
     TApiError,
-    IMoveOrSwapOptimistic,
+    IMoveOrSwapPayload,
     { previousSchedule?: TScheduleQueryData; queryKey: string[] }
   >({
-    mutationFn: (payload) => {
-      const { currentEntries, ...apiPayload } = payload;
-      return moveOrSwapEntry(apiPayload);
+    mutationFn: (payload: IMoveOrSwapPayload) => {
+      return moveOrSwapEntry(payload);
     },
-    onMutate: async (newEntryData) => {
+    onMutate: async (newEntryData: IMoveOrSwapPayload) => {
       const queryKey = ["schedule", newEntryData.classSlug];
       await queryClient.cancelQueries({ queryKey });
 
@@ -57,48 +55,54 @@ export const useMoveOrSwapEntry = () => {
         queryClient.getQueryData<TScheduleQueryData>(queryKey);
 
       queryClient.setQueryData<TScheduleQueryData>(queryKey, (oldData) => {
-        const oldSchedule = Array.isArray(oldData) ? oldData : oldData?.entries;
-
-        if (!oldSchedule) {
-          return oldData; // Agar keshda ma'lumot bo'lmasa, o'zgartirmaymiz
+        // Tipni to'g'rilaymiz
+        if (!oldData?.scheduleEntries) {
+          return oldData;
         }
 
-        const sourceEntry = oldSchedule.find(
-          (e) => e.id === newEntryData.source.id
+        const oldEntries = oldData.scheduleEntries;
+
+        const sourceEntry = oldEntries.find(
+          (e: IScheduleEntry) => e.id === newEntryData.source.id
         );
         if (!sourceEntry) return oldData;
 
-        const targetEntry = oldSchedule.find(
-          (e) =>
+        const targetEntry = oldEntries.find(
+          (e: IScheduleEntry) =>
             e.dayOfWeek === newEntryData.targetDay &&
             e.lessonNumber === newEntryData.targetLesson
         );
 
-        const newSchedule = oldSchedule.map((entry) => {
-          if (entry.id === sourceEntry.id) {
-            return {
-              ...entry,
-              dayOfWeek: newEntryData.targetDay,
-              lessonNumber: newEntryData.targetLesson,
-            };
-          }
-          if (targetEntry && entry.id === targetEntry.id) {
-            return {
-              ...entry,
-              dayOfWeek: sourceEntry.dayOfWeek,
-              lessonNumber: sourceEntry.lessonNumber,
-            };
-          }
-          return entry;
-        });
+        let newEntries;
 
-        // Keshdagi ma'lumot strukturasini saqlab qolish
-        if (Array.isArray(oldData)) {
-          return newSchedule;
-        } else if (oldData) {
-          return { ...oldData, entries: newSchedule };
+        if (targetEntry) {
+          // ALMASHTIRISH: Fanlarni almashtiramiz
+          const sourceSubject = sourceEntry.subject;
+          const targetSubject = targetEntry.subject;
+          newEntries = oldEntries.map((entry: IScheduleEntry) => {
+            if (entry.id === sourceEntry.id) {
+              return { ...entry, subject: targetSubject };
+            }
+            if (entry.id === targetEntry.id) {
+              return { ...entry, subject: sourceSubject };
+            }
+            return entry;
+          });
+        } else {
+          // KO'CHIRISH: Bo'sh katakka o'tkazamiz
+          newEntries = oldEntries.map((entry: IScheduleEntry) => {
+            if (entry.id === sourceEntry.id) {
+              return {
+                ...entry,
+                dayOfWeek: newEntryData.targetDay,
+                lessonNumber: newEntryData.targetLesson,
+              };
+            }
+            return entry;
+          });
         }
-        return oldData;
+
+        return { ...oldData, scheduleEntries: newEntries };
       });
 
       return { previousSchedule, queryKey };

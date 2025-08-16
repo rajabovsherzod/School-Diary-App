@@ -11,14 +11,19 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
 import { IScheduleEntry } from "@/lib/api/schedule/schedule.types";
 import { useMoveOrSwapEntry } from "@/hooks/mutations/use-schedule-mutations";
-import { ScheduleEntryCard } from "./schedule-entry-card";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EntryCell } from "./schedule-entry-cell";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { useDroppable } from "@dnd-kit/core";
+import { cn } from "@/lib/utils";
 
 interface ScheduleGridProps {
   entries: IScheduleEntry[];
@@ -33,7 +38,20 @@ const days = [
   "Juma",
   "Shanba",
 ];
-const maxLessons = 7;
+
+const EmptyCell = ({ id }: { id: string }) => {
+  const { setNodeRef, isOver } = useDroppable({ id, data: { type: "empty" } });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "h-12 w-full rounded-sm transition-colors duration-200",
+        isOver ? "bg-indigo-100" : "bg-gray-50/80"
+      )}
+    />
+  );
+};
 
 export const ScheduleGrid = ({ entries, slug }: ScheduleGridProps) => {
   const { mutate: moveOrSwap } = useMoveOrSwapEntry();
@@ -47,23 +65,17 @@ export const ScheduleGrid = ({ entries, slug }: ScheduleGridProps) => {
     })
   );
 
-  const entriesByDay = useMemo(() => {
-    const grouped: (IScheduleEntry | null)[][] = Array.from({ length: 6 }, () =>
-      Array(maxLessons).fill(null)
-    );
+  const entriesByDayAndLesson = useMemo(() => {
+    const grouped: Record<string, IScheduleEntry> = {};
     entries.forEach((entry) => {
-      if (entry.dayOfWeek >= 1 && entry.dayOfWeek <= 6) {
-        grouped[entry.dayOfWeek - 1][entry.lessonNumber - 1] = entry;
-      }
+      grouped[`${entry.dayOfWeek}-${entry.lessonNumber}`] = entry;
     });
     return grouped;
   }, [entries]);
 
   const handleDragStart = (event: DragStartEvent) => {
-    const { active } = event;
-    const entry = active.data.current?.entry;
-    if (entry) {
-      setActiveEntry(entry);
+    if (event.active.data.current?.type === "entry") {
+      setActiveEntry(event.active.data.current.entry as IScheduleEntry);
     }
   };
 
@@ -71,26 +83,24 @@ export const ScheduleGrid = ({ entries, slug }: ScheduleGridProps) => {
     setActiveEntry(null);
     const { active, over } = event;
 
-    if (!over || !active.data.current?.entry) return;
-    if (active.id === over.id) return;
+    if (!over || !active.data.current?.entry || active.id === over.id) return;
 
-    const sourceEntry = active.data.current.entry as IScheduleEntry;
-    const targetData = over.data.current?.entry;
-
+    const sourceId = parseInt(active.id as string, 10);
+    const overData = over.data.current;
     let targetDay: number, targetLesson: number;
 
-    if (targetData) {
-      targetDay = targetData.dayOfWeek;
-      targetLesson = targetData.lessonNumber;
+    if (overData?.type === "entry") {
+      targetDay = overData.entry.dayOfWeek;
+      targetLesson = overData.entry.lessonNumber;
+    } else if (overData?.type === "empty") {
+      [targetDay, targetLesson] = (over.id as string).split("-").map(Number);
     } else {
-      const [dayStr, lessonStr] = (over.id as string).split("-").slice(1);
-      targetDay = parseInt(dayStr, 10);
-      targetLesson = parseInt(lessonStr, 10);
+      return;
     }
 
     moveOrSwap({
       classSlug: slug,
-      source: { type: "scheduled", id: sourceEntry.id },
+      source: { type: "scheduled", id: sourceId },
       targetDay,
       targetLesson,
     });
@@ -103,44 +113,71 @@ export const ScheduleGrid = ({ entries, slug }: ScheduleGridProps) => {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {days.map((dayName, dayIndex) => {
           const dayNumber = dayIndex + 1;
-          const dayEntries = entriesByDay[dayIndex];
-          const entryIds = dayEntries.map(
-            (e, i) => e?.id || `empty-${dayNumber}-${i + 1}`
+          const entriesForDay = entries.filter(
+            (e) => e.dayOfWeek === dayNumber
+          );
+
+          const maxLessonsForDay = Math.max(
+            7,
+            ...entriesForDay.map((e) => e.lessonNumber)
           );
 
           return (
-            <Card
+            <div
               key={dayNumber}
-              className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200/80"
+              className="overflow-hidden rounded-lg border shadow-sm"
             >
-              <CardHeader className="bg-primary text-primary-foreground px-3 py-1.5">
-                <CardTitle className="text-sm font-semibold tracking-tight">
-                  {dayName}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-3 space-y-2">
-                <SortableContext
-                  items={entryIds}
-                  strategy={verticalListSortingStrategy}
-                >
-                  {dayEntries.map((entry, lessonIndex) => (
-                    <ScheduleEntryCard
-                      key={entry?.id || `empty-${dayNumber}-${lessonIndex + 1}`}
-                      entry={entry}
-                    />
-                  ))}
-                </SortableContext>
-              </CardContent>
-            </Card>
+              <Table className="w-full bg-white">
+                <TableHeader>
+                  <TableRow className="bg-primary/90 hover:bg-primary/90">
+                    <TableHead className="w-16 border-r text-center font-semibold text-primary-foreground">
+                      №
+                    </TableHead>
+                    <TableHead className="text-center font-semibold text-primary-foreground">
+                      {dayName}
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {Array.from({ length: maxLessonsForDay }).map(
+                    (_, lessonIndex) => {
+                      const lessonNumber = lessonIndex + 1;
+                      const cellId = `${dayNumber}-${lessonNumber}`;
+                      const entry = entriesByDayAndLesson[cellId];
+
+                      return (
+                        <TableRow
+                          key={lessonNumber}
+                          className="border-b last:border-b-0"
+                        >
+                          <TableCell className="w-16 text-center font-medium text-gray-600 border-r">
+                            {lessonNumber}
+                          </TableCell>
+                          <TableCell className="p-0 h-12">
+                            {entry ? (
+                              <EntryCell entry={entry} />
+                            ) : (
+                              <EmptyCell id={cellId} />
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    }
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           );
         })}
       </div>
-      <DragOverlay>
+      <DragOverlay dropAnimation={null}>
         {activeEntry ? (
-          <ScheduleEntryCard entry={activeEntry} isOverlay />
+          <div className="h-full w-full flex items-center justify-center p-1 text-center text-sm font-medium cursor-grabbing rounded-sm bg-white shadow-2xl ring-2 ring-primary">
+            {activeEntry.subject.name}
+          </div>
         ) : null}
       </DragOverlay>
     </DndContext>

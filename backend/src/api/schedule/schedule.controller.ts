@@ -59,22 +59,26 @@ class ScheduleController {
   };
 
   moveOrSwapEntry = async (req: Request, res: Response) => {
-    const payload: IMoveOrSwapPayload = req.body;
+    // YECHIM: `slug` manzil parametrlaridan, qolgan ma'lumotlar tanadan olinadi.
+    const { slug } = req.params;
+    const body = req.body;
 
-    // O'ZGARISH: classId o'rniga classSlug tekshiriladi
-    if (
-      !payload.classSlug ||
-      !payload.targetDay ||
-      !payload.targetLesson ||
-      !payload.source ||
-      !payload.source.type ||
-      !payload.source.id
-    ) {
-      throw new ApiError(400, "Invalid payload for move/swap operation");
+    const payload: IMoveOrSwapPayload = {
+      classSlug: slug,
+      ...body,
+    };
+
+    try {
+      const result = await this.scheduleService.moveOrSwapEntry(payload);
+      res.status(200).json(result);
+    } catch (error) {
+      if (error instanceof ApiError) {
+        return res.status(error.statusCode).json({ message: error.message });
+      }
+      res
+        .status(500)
+        .json({ message: "Error moving or swapping entry", error });
     }
-
-    const result = await this.scheduleService.moveOrSwapEntry(payload);
-    res.status(200).json(new ApiResponse(result, result.message));
   };
 }
 

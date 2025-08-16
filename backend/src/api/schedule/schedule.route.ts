@@ -23,7 +23,10 @@ router
   .post(asyncHandler(scheduleController.generateScheduleForClassBySlug));
 
 // Intelligently move, swap, or insert a schedule entry
-router.put("/move", asyncHandler(scheduleController.moveOrSwapEntry));
+// YECHIM: Yo'lga sinfni aniqlovchi `:slug` parametri qo'shildi.
+router
+  .route("/class/:slug/move")
+  .put(asyncHandler(scheduleController.moveOrSwapEntry));
 
 // --- Resource-Specific Routes ---
 

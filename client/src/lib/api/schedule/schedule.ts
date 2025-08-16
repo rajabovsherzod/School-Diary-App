@@ -8,12 +8,15 @@ import {
 
 export const getScheduleBySlug = async (
   slug: string
-): Promise<IFullSchedulePayload> => {
+): Promise<IFullSchedulePayload | null> => {
   try {
-    const response = await $axios.get(`/schedules/class/${slug}`);
-    return response.data;
+    const { data } = await $axios.get<IFullSchedulePayload>(
+      `/schedules/class/${slug}`
+    );
+    return data;
   } catch (error) {
-    throw error as TApiError;
+    console.error("Error fetching schedule by slug:", error);
+    return null;
   }
 };
 
@@ -27,6 +30,11 @@ export const generateScheduleForClassBySlug = async (
 export const moveOrSwapEntry = async (
   payload: IMoveOrSwapPayload
 ): Promise<IGenericSuccessMessage> => {
-  const response = await $axios.put("/schedules/move", payload);
-  return response.data;
+  // YECHIM: `classSlug` URL'ga, qolgan ma'lumotlar tanaga (body) joylashtirildi.
+  const { classSlug, ...rest } = payload;
+  const { data } = await $axios.put<IGenericSuccessMessage>(
+    `/schedules/class/${classSlug}/move`,
+    rest
+  );
+  return data;
 };
