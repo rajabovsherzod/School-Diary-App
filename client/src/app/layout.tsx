@@ -30,7 +30,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className="h-full">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
@@ -43,21 +43,19 @@ export default function RootLayout({
         >
           <QueryProvider>
             <SidebarProvider>
-              <div className="flex h-screen w-full overflow-hidden">
-                <AppSidebar />
-                <div className="flex flex-1 flex-col">
-                  <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b border-sidebar-border bg-primary px-4 text-primary-foreground">
-                    <SidebarTrigger>
-                      <PanelLeftIcon />
-                    </SidebarTrigger>
-                    <h1 className="text-xl font-semibold">School Diary</h1>
-                  </header>
-                  <main className="flex-1 overflow-y-auto p-4 md:p-6">
-                    {children}
-                  </main>
+              <div className="grid h-screen w-full grid-rows-[auto_1fr]">
+                <header className="flex h-14 shrink-0 items-center gap-4 border-b bg-primary px-4 text-primary-foreground">
+                  <SidebarTrigger>
+                    <PanelLeftIcon />
+                  </SidebarTrigger>
+                  <h1 className="text-xl font-semibold">School Diary</h1>
+                </header>
+                <div className="flex overflow-auto">
+                  <AppSidebar />
+                  <main className="w-full p-4 md:p-6">{children}</main>
                 </div>
+                <Toaster />
               </div>
-              <Toaster />
             </SidebarProvider>
           </QueryProvider>
         </ThemeProvider>

@@ -9,27 +9,20 @@ import { toast } from "sonner";
 import { ResponsiveSchedule } from "@/components/schedule/responsive-schedule";
 import { ConfirmationDialog } from "@/components/schedule/confirmation-dialog";
 import { TApiError } from "@/types/api-error";
-import { ScheduleHeader } from "@/components/schedule/schedule-header";
+import { PageHeader } from "@/components/ui/page-header";
 import { CalendarPlus } from "lucide-react";
 
-// YECHIM: Komponent endi props qabul qilmaydi
 const SchedulePage = () => {
-  // YECHIM: Parametrlar hook orqali olinadi
   const params = useParams();
-  const slug = params.slug as string; // Tipni aniqlashtirish
+  const slug = params.slug as string;
 
   const { data: scheduleData, isLoading } = useGetScheduleBySlug(slug);
-  // XATO TUZATILDI: `isLoading` o'rniga `isPending` ishlatilmoqda
   const { mutate: generateSchedule, isPending: isGenerating } =
     useGenerateScheduleBySlug();
 
   const [isConfirmOpen, setConfirmOpen] = useState(false);
 
-  // Funksiya har doim joriy 'slug' bilan ishlaydi
   const handleConfirmGenerate = () => {
-    // YECHIM: Mutatsiya endi to'g'ridan-to'g'ri slug bilan chaqiriladi
-    // va onSuccess/onError callback'lari mutation hook'ining o'zida
-    // markazlashtirilgan holda boshqariladi.
     generateSchedule(slug, {
       onSuccess: () => {
         toast.success(`'${slug}' sinfi uchun jadval muvaffaqiyatli yaratildi!`);
@@ -50,12 +43,11 @@ const SchedulePage = () => {
   }
 
   return (
-    <div className="container mx-auto p-4">
+    <>
       <div className="mb-4">
-        <ScheduleHeader
+        <PageHeader
           title={`${scheduleData?.class?.name || slug} uchun dars jadvali`}
         >
-          {/* Mobil uchun faqat ikonka ko'rsatadigan tugma */}
           <Button
             onClick={() => setConfirmOpen(true)}
             disabled={isGenerating}
@@ -64,7 +56,6 @@ const SchedulePage = () => {
           >
             <CalendarPlus className="h-4 w-4" />
           </Button>
-          {/* Katta ekranlar uchun matn va ikonka ko'rsatadigan tugma */}
           <Button
             onClick={() => setConfirmOpen(true)}
             disabled={isGenerating}
@@ -73,19 +64,18 @@ const SchedulePage = () => {
             <CalendarPlus className="h-4 w-4 mr-2" />
             {isGenerating ? "Yaratilmoqda..." : "Jadvalni yaratish"}
           </Button>
-        </ScheduleHeader>
+        </PageHeader>
       </div>
 
       <ConfirmationDialog
         isOpen={isConfirmOpen}
         onClose={() => setConfirmOpen(false)}
-        onConfirm={handleConfirmGenerate} // To'g'ridan-to'g'ri funksiyani uzatish
+        onConfirm={handleConfirmGenerate}
         title="Jadvalni yaratishni tasdiqlang"
         description={`Siz haqiqatdan ham "${slug}" sinfi uchun jadvalni qayta yaratmoqchimisiz? Mavjud jadval o'chiriladi.`}
         isLoading={isGenerating}
       />
 
-      {/* XATO TUZATILDI: `schedule` o'rniga `scheduleEntries` ishlatilmoqda */}
       {scheduleData && scheduleData.scheduleEntries.length > 0 ? (
         <ResponsiveSchedule
           entries={scheduleData.scheduleEntries}
@@ -98,7 +88,7 @@ const SchedulePage = () => {
           </p>
         </div>
       )}
-    </div>
+    </>
   );
 };
 

@@ -1,26 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import * as React from "react";
 
 export function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState(false);
+  const [value, setValue] = React.useState(false);
 
-  useEffect(() => {
-    // Bu kod faqat brauzerda (client-side) ishlashini ta'minlaydi
-    if (typeof window !== "undefined") {
-      const media = window.matchMedia(query);
-      const updateMatches = () => setMatches(media.matches);
-
-      // Boshlang'ich tekshiruv
-      updateMatches();
-
-      // O'lcham o'zgarganda tinglash
-      media.addEventListener("change", updateMatches);
-
-      // Komponent o'chirilganda event listener'ni tozalash
-      return () => media.removeEventListener("change", updateMatches);
+  React.useEffect(() => {
+    function onChange(event: MediaQueryListEvent) {
+      setValue(event.matches);
     }
+
+    const result = window.matchMedia(query);
+    result.addEventListener("change", onChange);
+    setValue(result.matches);
+
+    return () => result.removeEventListener("change", onChange);
   }, [query]);
 
-  return matches;
+  return value;
 }

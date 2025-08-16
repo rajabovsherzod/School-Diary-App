@@ -5,6 +5,9 @@ import { useGetClassBySlug } from "@/hooks/queries/use-class-queries";
 import ClassSubjectsList from "@/components/class-subjects/class-subjects-list";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AddSubjectsModal } from "@/components/class-subjects/add-subjects-modal";
+import { PageHeader } from "@/components/ui/page-header";
+import { Button } from "@/components/ui/button";
+import { PlusCircle } from "lucide-react";
 
 const AssignSubjectsPage = () => {
   const params = useParams();
@@ -14,50 +17,50 @@ const AssignSubjectsPage = () => {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto py-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">
-            <Skeleton className="h-9 w-64" />
-          </h1>
-        </div>
+      <div className="space-y-4">
+        <Skeleton className="h-9 w-64" />
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
       </div>
     );
   }
 
   if (isError) {
     return (
-      <div className="container mx-auto py-8 text-center text-red-500">
+      <div className="text-center text-red-500">
         Sinf ma&apos;lumotlarini yuklashda xatolik yuz berdi.
       </div>
     );
   }
 
   if (!classData) {
-    return (
-      <div className="container mx-auto py-8 text-center">
-        Bunday sinf topilmadi.
-      </div>
-    );
+    return <div className="text-center">Bunday sinf topilmadi.</div>;
   }
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">
-          <span className="text-muted-foreground">{classData.name}</span> /
-          Fanlarni sozlash
-        </h1>
-        <div>
+    <>
+      <div className="mb-6">
+        <PageHeader title={`${classData.name} / Fanlarni sozlash`}>
           <AddSubjectsModal
             classId={classData.id}
             className={classData.name}
             slug={slug}
-          />
-        </div>
+          >
+            <span>
+              <Button size="icon" className="sm:hidden">
+                <PlusCircle className="h-4 w-4" />
+              </Button>
+              <Button className="hidden sm:flex">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Yangi fanlar qo&apos;shish
+              </Button>
+            </span>
+          </AddSubjectsModal>
+        </PageHeader>
       </div>
 
       <ClassSubjectsList slug={slug} />
-    </div>
+    </>
   );
 };
 

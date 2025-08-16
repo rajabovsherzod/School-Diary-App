@@ -29,12 +29,14 @@ interface AddSubjectsModalProps {
   classId: number;
   className: string;
   slug: string;
+  children?: React.ReactNode;
 }
 
 export const AddSubjectsModal = ({
   classId,
   className,
   slug,
+  children,
 }: AddSubjectsModalProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const {
@@ -98,12 +100,7 @@ export const AddSubjectsModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Yangi fanlar qo&apos;shish
-        </Button>
-      </DialogTrigger>
+      <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{className} sinfiga fan qo&apos;shish</DialogTitle>

@@ -2,7 +2,13 @@
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import {
+  MoreHorizontal,
+  Pencil,
+  Settings,
+  Trash2,
+  CalendarDays,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,12 +16,23 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useGetSubjects } from "@/hooks/queries/use-subject-queries";
+import Link from "next/link";
+import { ClassResponse } from "@/lib/api/class/class.types";
 
-const SubjectsList = () => {
-  const { data: subjects, isPending, isError } = useGetSubjects();
+interface ScrollableClassesTableProps {
+  data: ClassResponse[] | undefined;
+  isLoading: boolean;
+  isError: boolean;
+}
 
-  if (isPending) {
+const ScrollableClassesTable = ({
+  data,
+  isLoading,
+  isError,
+}: ScrollableClassesTableProps) => {
+  const classes = Array.isArray(data) ? data : [];
+
+  if (isLoading) {
     return <TableSkeleton />;
   }
 
@@ -27,12 +44,12 @@ const SubjectsList = () => {
     );
   }
 
-  if (!subjects || subjects.length === 0) {
+  if (!classes || classes.length === 0) {
     return (
       <div className="py-16 text-center">
-        <h3 className="text-xl font-semibold">Hozircha fanlar mavjud emas</h3>
+        <h3 className="text-xl font-semibold">Hozircha sinflar mavjud emas</h3>
         <p className="mt-2 text-muted-foreground">
-          Birinchi fanni qo&apos;shish uchun yuqoridagi tugmani bosing.
+          Birinchi sinfni qo&apos;shish uchun yuqoridagi tugmani bosing.
         </p>
       </div>
     );
@@ -48,7 +65,13 @@ const SubjectsList = () => {
                 T/r
               </th>
               <th className="h-10 border-r px-2 text-left align-middle font-medium text-primary-foreground">
-                Fan nomi
+                Sinf nomi
+              </th>
+              <th className="h-10 border-r px-2 text-left align-middle font-medium text-primary-foreground">
+                Sinf rahbari
+              </th>
+              <th className="h-10 w-[150px] border-r px-2 text-center align-middle font-medium text-primary-foreground">
+                O&apos;quvchilar soni
               </th>
               <th className="h-10 w-[100px] px-2 text-center align-middle font-medium text-primary-foreground">
                 Amallar
@@ -56,18 +79,24 @@ const SubjectsList = () => {
             </tr>
           </thead>
           <tbody className="[&_tr:last-child]:border-0">
-            {subjects.map((subject, index) => (
+            {classes.map((classItem, index) => (
               <tr
-                key={subject.id}
+                key={classItem.id}
                 className="border-b transition-colors hover:bg-muted/50"
               >
-                <td className="w-[50px] border-r p-2 text-center align-middle font-medium">
+                <td className="border-r p-2 text-center align-middle font-medium">
                   {index + 1}
                 </td>
                 <td className="whitespace-nowrap border-r p-2 align-middle">
-                  {subject.name}
+                  {classItem.name}
                 </td>
-                <td className="w-[100px] p-2 align-middle">
+                <td className="whitespace-nowrap border-r p-2 align-middle">
+                  {classItem.teacher}
+                </td>
+                <td className="border-r p-2 text-center align-middle">
+                  {classItem.studentCount}
+                </td>
+                <td className="p-2 align-middle">
                   <div className="flex justify-center">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -81,6 +110,18 @@ const SubjectsList = () => {
                         <DropdownMenuItem>
                           <Pencil className="mr-2 h-4 w-4" />
                           <span>Tahrirlash</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href={`/classes/${classItem.slug}/schedule`}>
+                            <CalendarDays className="mr-2 h-4 w-4" />
+                            <span>Dars jadvali</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href={`/classes/${classItem.slug}/subjects`}>
+                            <Settings className="mr-2 h-4 w-4" />
+                            <span>Fanlar</span>
+                          </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem className="text-red-500 focus:text-red-500">
                           <Trash2 className="mr-2 h-4 w-4" />
@@ -100,7 +141,7 @@ const SubjectsList = () => {
 };
 
 const TableSkeleton = () => (
-  <div className="rounded-md border">
+  <div className="w-full rounded-md border">
     <table className="w-full caption-bottom text-sm">
       <thead className="[&_tr]:border-b">
         <tr className="border-b-0 bg-primary transition-colors hover:bg-primary">
@@ -108,7 +149,13 @@ const TableSkeleton = () => (
             T/r
           </th>
           <th className="h-10 border-r px-2 text-left align-middle font-medium text-primary-foreground">
-            Fan nomi
+            Sinf nomi
+          </th>
+          <th className="h-10 border-r px-2 text-left align-middle font-medium text-primary-foreground">
+            Sinf rahbari
+          </th>
+          <th className="h-10 w-[150px] border-r px-2 text-center align-middle font-medium text-primary-foreground">
+            O&apos;quvchilar soni
           </th>
           <th className="h-10 w-[100px] px-2 text-center align-middle font-medium text-primary-foreground">
             Amallar
@@ -124,6 +171,12 @@ const TableSkeleton = () => (
             <td className="border-r p-2 align-middle">
               <Skeleton className="h-5 w-48" />
             </td>
+            <td className="border-r p-2 align-middle">
+              <Skeleton className="h-5 w-48" />
+            </td>
+            <td className="border-r p-2 text-center align-middle">
+              <Skeleton className="mx-auto h-5 w-12" />
+            </td>
             <td className="p-2 align-middle">
               <div className="flex justify-center">
                 <Skeleton className="h-8 w-8" />
@@ -136,4 +189,4 @@ const TableSkeleton = () => (
   </div>
 );
 
-export default SubjectsList;
+export default ScrollableClassesTable;

@@ -12,7 +12,6 @@ import {
   useSensor,
   useSensors,
   useDroppable,
-  useDraggable,
 } from "@dnd-kit/core";
 import { IScheduleEntry } from "@/lib/api/schedule/schedule.types";
 import { useMoveOrSwapEntry } from "@/hooks/mutations/use-schedule-mutations";

@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Users, Library, School } from "lucide-react";
+import {
+  Home,
+  Users,
+  Library,
+  School,
+  BookCopy,
+  CalendarDays,
+} from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -12,18 +19,20 @@ import {
   SidebarMenuButton,
   SidebarFooter,
 } from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
 
 const menuItems = [
   { href: "/", title: "Asosiy", icon: Home },
   { href: "/classes", title: "Sinflar", icon: Users },
   { href: "/subjects", title: "Fanlar", icon: Library },
+  { href: "/schedules", title: "Dars jadvallari", icon: CalendarDays },
 ];
 
-export function AppSidebar() {
+export function AppSidebar({ className }: { className?: string }) {
   const pathname = usePathname();
 
   return (
-    <Sidebar className="bg-sidebar text-sidebar-foreground">
+    <Sidebar className={cn("bg-sidebar text-sidebar-foreground", className)}>
       <SidebarHeader className="p-4 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
           <School className="size-7 text-sidebar-foreground" />
@@ -50,8 +59,7 @@ export function AppSidebar() {
           })}
         </SidebarMenu>
       </SidebarContent>
-      <SidebarFooter>
-      </SidebarFooter>
+      <SidebarFooter></SidebarFooter>
     </Sidebar>
   );
 }
