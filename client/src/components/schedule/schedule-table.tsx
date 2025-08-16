@@ -25,10 +25,14 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { EntryCell } from "./schedule-entry-cell";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface ScheduleTableProps {
-  entries: IScheduleEntry[];
+  schedule: IScheduleEntry[];
   slug: string;
+  deletionMode: { subjectId: number; count: number } | null;
+  selectedForDeletion: Set<number>;
+  onToggleSelection: (entryId: number) => void;
 }
 
 const days = [
@@ -56,7 +60,13 @@ const EmptyCell = ({ id }: { id: string }) => {
   );
 };
 
-export const ScheduleTable = ({ entries, slug }: ScheduleTableProps) => {
+export const ScheduleTable = ({
+  schedule,
+  slug,
+  deletionMode,
+  selectedForDeletion,
+  onToggleSelection,
+}: ScheduleTableProps) => {
   const { mutate: moveOrSwap } = useMoveOrSwapEntry();
   const [activeEntry, setActiveEntry] = useState<IScheduleEntry | null>(null);
 
@@ -70,13 +80,14 @@ export const ScheduleTable = ({ entries, slug }: ScheduleTableProps) => {
 
   const entriesByDayAndLesson = useMemo(() => {
     const grouped: Record<string, IScheduleEntry> = {};
-    entries.forEach((entry) => {
+    schedule.forEach((entry) => {
       grouped[`${entry.dayOfWeek}-${entry.lessonNumber}`] = entry;
     });
     return grouped;
-  }, [entries]);
+  }, [schedule]);
 
   const handleDragStart = (event: DragStartEvent) => {
+    if (deletionMode) return; // O'chirish rejimida sudrashni o'chiramiz
     if (event.active.data.current?.type === "entry") {
       const entry = event.active.data.current?.entry as IScheduleEntry;
       if (entry) setActiveEntry(entry);
@@ -141,7 +152,7 @@ export const ScheduleTable = ({ entries, slug }: ScheduleTableProps) => {
           const dayNumbersInChunk = chunk.map((day) => days.indexOf(day) + 1);
 
           const maxLessonsForChunk = (() => {
-            const entriesInChunk = entries.filter((entry) =>
+            const entriesInChunk = schedule.filter((entry) =>
               dayNumbersInChunk.includes(entry.dayOfWeek)
             );
             if (entriesInChunk.length === 0) return 1;
@@ -191,19 +202,44 @@ export const ScheduleTable = ({ entries, slug }: ScheduleTableProps) => {
                             const cellId = `${dayNumber}-${lessonNumber}`;
                             const entry = entriesByDayAndLesson[cellId];
 
+                            const isDeletionCandidate =
+                              deletionMode &&
+                              entry &&
+                              entry.subjectId === deletionMode.subjectId;
+                            const isSelected =
+                              entry && selectedForDeletion.has(entry.id);
+
                             return (
                               <TableCell
                                 key={cellId}
                                 className={cn(
                                   "p-0 h-12",
                                   dayIndexInChunk < chunk.length - 1 &&
-                                    "border-r"
+                                    "border-r",
+                                  isDeletionCandidate &&
+                                    "ring-2 ring-destructive/50 ring-inset",
+                                  isSelected &&
+                                    "ring-destructive bg-destructive/10"
                                 )}
+                                onClick={() =>
+                                  isDeletionCandidate &&
+                                  onToggleSelection(entry.id)
+                                }
                               >
                                 {entry ? (
-                                  <EntryCell entry={entry} />
+                                  isDeletionCandidate ? (
+                                    <div className="relative h-full w-full flex items-center justify-center p-1 text-center text-sm font-medium cursor-pointer">
+                                      <Checkbox
+                                        checked={isSelected}
+                                        className="absolute top-1 right-1 h-4 w-4"
+                                      />
+                                      {entry.subject.name}
+                                    </div>
+                                  ) : (
+                                    <EntryCell entry={entry} />
+                                  )
                                 ) : (
-                                  <EmptyCell id={cellId} />
+                                  !deletionMode && <EmptyCell id={cellId} />
                                 )}
                               </TableCell>
                             );

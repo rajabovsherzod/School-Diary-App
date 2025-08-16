@@ -22,11 +22,13 @@ export interface IScheduleEntry {
   subject: ISubject;
 }
 
+export type TMoveSource =
+  | { type: "scheduled"; id: number }
+  | { type: "unscheduled"; id: number; subject: { id: number; name: string } };
+
 export interface IMoveOrSwapPayload {
   classSlug: string;
-  source:
-    | { type: "scheduled"; id: number }
-    | { type: "unscheduled"; id: number };
+  source: TMoveSource;
   targetDay: number;
   targetLesson: number;
 }
@@ -46,3 +48,6 @@ export interface ISubjectDebt {
   subjectName: string;
   scheduleDiff: number;
 }
+
+// Bu tip react-query tomonidan keshlanadigan ma'lumotlar strukturasini ifodalaydi
+export type TScheduleQueryData = IFullSchedulePayload;

@@ -18,6 +18,11 @@ import {
 } from "@/generated/prisma";
 
 class ScheduleService {
+  getClassBySlug(slug: string): Promise<Class | null> {
+    return prisma.class.findUnique({
+      where: { slug },
+    });
+  }
   /**
    * Sinf uchun dars jadvalini uning SLUG'i orqali to'liq olib beradi.
    */
@@ -217,18 +222,60 @@ class ScheduleService {
         return { message: "Lessons swapped successfully." };
       }
 
-      // 2-holat: Yon paneldan yangi darsni jadvalga joylashtirish
+      // 2-holat: Akkordeondan yangi darsni jadvalga joylashtirish
       if (source.type === "unscheduled") {
         const subjectId = source.id;
         const targetEntry = await tx.scheduleEntry.findFirst({
           where: { classId, dayOfWeek: targetDay, lessonNumber: targetLesson },
         });
 
-        // Agar boriladigan joy band bo'lsa, xatolik qaytaramiz (bu holatda surish logikasi yo'q)
+        // Agar boriladigan joy band bo'lsa, eski darsni suramiz
         if (targetEntry) {
-          throw new ApiError(400, "Target cell is already occupied.");
+          // Jadvaldagi barcha darslarni olamiz va bo'sh joy qidiramiz
+          const allEntries = await tx.scheduleEntry.findMany({
+            where: { classId },
+            orderBy: [{ dayOfWeek: "asc" }, { lessonNumber: "asc" }],
+          });
+
+          const occupiedSlots = new Set(
+            allEntries.map((e) => `${e.dayOfWeek}-${e.lessonNumber}`)
+          );
+
+          let firstEmptySlot: {
+            dayOfWeek: number;
+            lessonNumber: number;
+          } | null = null;
+          const maxLessons = Math.max(
+            ...allEntries.map((e) => e.lessonNumber),
+            7
+          );
+
+          // Birinchi bo'sh katakchani topish
+          for (let day = 1; day <= 6; day++) {
+            for (let lesson = 1; lesson <= maxLessons + 1; lesson++) {
+              if (!occupiedSlots.has(`${day}-${lesson}`)) {
+                firstEmptySlot = { dayOfWeek: day, lessonNumber: lesson };
+                break;
+              }
+            }
+            if (firstEmptySlot) break;
+          }
+
+          if (!firstEmptySlot) {
+            throw new ApiError(400, "Jadvalda bo'sh joy topilmadi.");
+          }
+
+          // Eski darsni topilgan bo'sh joyga ko'chiramiz
+          await tx.scheduleEntry.update({
+            where: { id: targetEntry.id },
+            data: {
+              dayOfWeek: firstEmptySlot.dayOfWeek,
+              lessonNumber: firstEmptySlot.lessonNumber,
+            },
+          });
         }
 
+        // Yangi darsni kerakli joyga yaratamiz
         await tx.scheduleEntry.create({
           data: {
             classId,
@@ -238,12 +285,13 @@ class ScheduleService {
           },
         });
 
+        // Fan qarzdorligini (scheduleDiff) kamaytiramiz
         await tx.classSubject.update({
           where: { classId_subjectId: { classId, subjectId } },
           data: { scheduleDiff: { decrement: 1 } },
         });
 
-        return { message: "Lesson placed successfully." };
+        return { message: "Dars muvaffaqiyatli joylashtirildi." };
       }
 
       throw new ApiError(400, "Invalid source type specified");
@@ -289,6 +337,54 @@ class ScheduleService {
     });
   }
 
+  public async deleteEntries(payload: {
+    entryIds: number[];
+    classId: number;
+    subjectId: number;
+  }): Promise<IGenericSuccessMessage> {
+    const { entryIds, classId, subjectId } = payload;
+
+    if (!entryIds || entryIds.length === 0) {
+      throw new ApiError(400, "O'chirish uchun darslar tanlanmagan");
+    }
+
+    return prisma.$transaction(async (tx) => {
+      const deleteCount = await tx.scheduleEntry.deleteMany({
+        where: {
+          id: { in: entryIds },
+          classId: classId,
+          subjectId: subjectId,
+        },
+      });
+
+      if (deleteCount.count !== entryIds.length) {
+        throw new ApiError(
+          404,
+          `Ba'zi darslar topilmadi yoki o'chirib bo'lmadi.`
+        );
+      }
+
+      // scheduleDiff'ni to'g'rilash
+      await tx.classSubject.update({
+        where: {
+          classId_subjectId: {
+            classId: classId,
+            subjectId: subjectId,
+          },
+        },
+        data: {
+          scheduleDiff: {
+            increment: entryIds.length,
+          },
+        },
+      });
+
+      return {
+        message: `${entryIds.length} ta dars muvaffaqiyatli o'chirildi`,
+      };
+    });
+  }
+
   /**
    * Dars jadvalidagi yozuvni o'chirganda fanning qarzdorligini yangilaydi.
    */
@@ -307,7 +403,7 @@ class ScheduleService {
     if (classSubject) {
       await tx.classSubject.update({
         where: { id: classSubject.id },
-        data: { scheduleDiff: { decrement: 1 } },
+        data: { scheduleDiff: { increment: 1 } },
       });
     }
   }

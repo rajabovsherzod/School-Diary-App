@@ -111,6 +111,11 @@ class ClassSubjectService {
         throw new ApiError(404, "Class-subject association not found");
       }
 
+      // Jadval mavjudligini tekshiramiz
+      const scheduleExists = await tx.scheduleEntry.findFirst({
+        where: { classId },
+      });
+
       const oldHours = existingEntry.hoursPerWeek;
       const diff = newHours - oldHours;
 
@@ -120,10 +125,12 @@ class ClassSubjectService {
         },
         data: {
           hoursPerWeek: newHours,
-          scheduleDiff: {
-            // scheduleDiff'ni eski qiymatiga qo'shamiz
-            increment: diff,
-          },
+          // Faqat jadval mavjud bo'lsa, diffni hisoblaymiz
+          ...(scheduleExists && {
+            scheduleDiff: {
+              increment: diff,
+            },
+          }),
         },
         include: { subject: true },
       });

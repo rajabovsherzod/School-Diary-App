@@ -80,6 +80,39 @@ class ScheduleController {
         .json({ message: "Error moving or swapping entry", error });
     }
   };
+
+  deleteEntries = async (req: Request, res: Response) => {
+    try {
+      const { slug } = req.params;
+      const { entryIds, subjectId } = req.body;
+
+      // Asosiy validatsiya
+      if (!Array.isArray(entryIds) || entryIds.length === 0 || !subjectId) {
+        throw new ApiError(
+          400,
+          "Payload xato. entryIds (massiv) va subjectId talab qilinadi."
+        );
+      }
+
+      const classData = await this.scheduleService.getClassBySlug(slug);
+      if (!classData) {
+        throw new ApiError(404, "Class not found");
+      }
+
+      const result = await this.scheduleService.deleteEntries({
+        entryIds,
+        classId: classData.id,
+        subjectId,
+      });
+
+      res.status(200).json(result);
+    } catch (error) {
+      if (error instanceof ApiError) {
+        return res.status(error.statusCode).json({ message: error.message });
+      }
+      res.status(500).json({ message: "Error deleting entries", error });
+    }
+  };
 }
 
 export default ScheduleController;

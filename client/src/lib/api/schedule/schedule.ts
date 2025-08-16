@@ -38,3 +38,16 @@ export const moveOrSwapEntry = async (
   );
   return data;
 };
+
+export const deleteScheduleEntries = async (payload: {
+  classSlug: string;
+  entryIds: number[];
+  subjectId: number;
+}): Promise<IGenericSuccessMessage> => {
+  const { classSlug, ...body } = payload;
+  const { data } = await $axios.delete<IGenericSuccessMessage>(
+    `/schedules/${classSlug}/entries`,
+    { data: body } // DELETE so'rovida body `data` propertisi ichida yuboriladi
+  );
+  return data;
+};

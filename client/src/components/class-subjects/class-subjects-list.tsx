@@ -36,20 +36,20 @@ const ClassSubjectsList = ({ slug }: ClassSubjectsListProps) => {
 
   if (isLoading) {
     return (
-      <div className="rounded-md border overflow-x-auto">
-        <Table>
+      <div className="rounded-md border">
+        <Table className="w-full">
           <TableHeader>
             <TableRow className="border-b-0 bg-primary hover:bg-primary">
-              <TableHead className="w-[50px] border-r text-center text-primary-foreground">
+              <TableHead className="border-r text-center text-primary-foreground">
                 T/r
               </TableHead>
               <TableHead className="border-r text-primary-foreground">
                 Fan nomi
               </TableHead>
-              <TableHead className="w-[150px] border-r text-center text-primary-foreground">
+              <TableHead className="border-r text-center text-primary-foreground">
                 Haftalik soat
               </TableHead>
-              <TableHead className="w-[100px] text-center text-primary-foreground">
+              <TableHead className="text-center text-primary-foreground">
                 Amallar
               </TableHead>
             </TableRow>
@@ -99,20 +99,20 @@ const ClassSubjectsList = ({ slug }: ClassSubjectsListProps) => {
   }
 
   return (
-    <div className="rounded-md border overflow-x-auto">
-      <Table>
+    <div className="rounded-md border">
+      <Table className="w-full">
         <TableHeader>
           <TableRow className="border-b-0 bg-primary hover:bg-primary">
-            <TableHead className="w-[50px] border-r text-center text-primary-foreground">
+            <TableHead className="border-r text-center text-primary-foreground">
               T/r
             </TableHead>
             <TableHead className="border-r text-primary-foreground">
               Fan nomi
             </TableHead>
-            <TableHead className="w-[150px] border-r text-center text-primary-foreground">
+            <TableHead className="border-r text-center text-primary-foreground">
               Haftalik soat
             </TableHead>
-            <TableHead className="w-[100px] text-center text-primary-foreground">
+            <TableHead className="text-center text-primary-foreground">
               Amallar
             </TableHead>
           </TableRow>

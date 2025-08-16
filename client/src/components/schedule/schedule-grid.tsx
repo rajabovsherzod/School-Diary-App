@@ -24,10 +24,14 @@ import {
 } from "@/components/ui/table";
 import { useDroppable } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface ScheduleGridProps {
-  entries: IScheduleEntry[];
+  schedule: IScheduleEntry[];
   slug: string;
+  deletionMode: { subjectId: number; count: number } | null;
+  selectedForDeletion: Set<number>;
+  onToggleSelection: (entryId: number) => void;
 }
 
 const days = [
@@ -53,7 +57,13 @@ const EmptyCell = ({ id }: { id: string }) => {
   );
 };
 
-export const ScheduleGrid = ({ entries, slug }: ScheduleGridProps) => {
+export const ScheduleGrid = ({
+  schedule,
+  slug,
+  deletionMode,
+  selectedForDeletion,
+  onToggleSelection,
+}: ScheduleGridProps) => {
   const { mutate: moveOrSwap } = useMoveOrSwapEntry();
   const [activeEntry, setActiveEntry] = useState<IScheduleEntry | null>(null);
 
@@ -67,13 +77,14 @@ export const ScheduleGrid = ({ entries, slug }: ScheduleGridProps) => {
 
   const entriesByDayAndLesson = useMemo(() => {
     const grouped: Record<string, IScheduleEntry> = {};
-    entries.forEach((entry) => {
+    schedule.forEach((entry) => {
       grouped[`${entry.dayOfWeek}-${entry.lessonNumber}`] = entry;
     });
     return grouped;
-  }, [entries]);
+  }, [schedule]);
 
   const handleDragStart = (event: DragStartEvent) => {
+    if (deletionMode) return; // O'chirish rejimida sudrashni o'chiramiz
     if (event.active.data.current?.type === "entry") {
       setActiveEntry(event.active.data.current.entry as IScheduleEntry);
     }
@@ -116,7 +127,7 @@ export const ScheduleGrid = ({ entries, slug }: ScheduleGridProps) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {days.map((dayName, dayIndex) => {
           const dayNumber = dayIndex + 1;
-          const entriesForDay = entries.filter(
+          const entriesForDay = schedule.filter(
             (e) => e.dayOfWeek === dayNumber
           );
 
@@ -148,6 +159,13 @@ export const ScheduleGrid = ({ entries, slug }: ScheduleGridProps) => {
                       const cellId = `${dayNumber}-${lessonNumber}`;
                       const entry = entriesByDayAndLesson[cellId];
 
+                      const isDeletionCandidate =
+                        deletionMode &&
+                        entry &&
+                        entry.subjectId === deletionMode.subjectId;
+                      const isSelected =
+                        entry && selectedForDeletion.has(entry.id);
+
                       return (
                         <TableRow
                           key={lessonNumber}
@@ -156,11 +174,31 @@ export const ScheduleGrid = ({ entries, slug }: ScheduleGridProps) => {
                           <TableCell className="w-16 text-center font-medium text-gray-600 border-r">
                             {lessonNumber}
                           </TableCell>
-                          <TableCell className="p-0 h-12">
+                          <TableCell
+                            className={cn(
+                              "p-0 h-12",
+                              isDeletionCandidate &&
+                                "ring-2 ring-destructive/50 ring-inset",
+                              isSelected && "ring-destructive bg-destructive/10"
+                            )}
+                            onClick={() =>
+                              isDeletionCandidate && onToggleSelection(entry.id)
+                            }
+                          >
                             {entry ? (
-                              <EntryCell entry={entry} />
+                              isDeletionCandidate ? (
+                                <div className="relative h-full w-full flex items-center justify-center p-1 text-center text-sm font-medium cursor-pointer">
+                                  <Checkbox
+                                    checked={isSelected}
+                                    className="absolute top-1 right-1 h-4 w-4"
+                                  />
+                                  {entry.subject.name}
+                                </div>
+                              ) : (
+                                <EntryCell entry={entry} />
+                              )
                             ) : (
-                              <EmptyCell id={cellId} />
+                              !deletionMode && <EmptyCell id={cellId} />
                             )}
                           </TableCell>
                         </TableRow>

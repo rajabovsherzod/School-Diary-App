@@ -28,7 +28,15 @@ router
   .route("/class/:slug/move")
   .put(asyncHandler(scheduleController.moveOrSwapEntry));
 
+router.post(
+  "/:slug/move-swap",
+  asyncHandler(scheduleController.moveOrSwapEntry)
+);
+
 // --- Resource-Specific Routes ---
+
+// Delete multiple schedule entries
+router.delete("/:slug/entries", asyncHandler(scheduleController.deleteEntries));
 
 // Delete a schedule entry by its ID
 router
