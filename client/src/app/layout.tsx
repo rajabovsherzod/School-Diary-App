@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -19,7 +18,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
+export const metadata = {
   title: "School Diary App",
   description: "A modern school diary application",
 };
@@ -48,11 +47,14 @@ export default function RootLayout({
                   <SidebarTrigger>
                     <PanelLeftIcon />
                   </SidebarTrigger>
-                  <h1 className="text-xl font-semibold">School Diary</h1>
+                  <div className="flex flex-1 items-center gap-3">
+                    <h1 className="text-xl font-semibold">School Diary</h1>
+                  </div>
                 </header>
                 <div className="flex overflow-hidden">
-                  <AppSidebar />
-                  <main className="container w-full px-4 pt-4 pb-8 md:px-6 md:pt-6 md:pb-12 overflow-auto">
+                  {/* MUHIM O'ZGARISH: Yon panelga maxsus class qo'shildi */}
+                  <AppSidebar className="hidden md:flex" />
+                  <main className="w-full flex-1 overflow-auto p-4 pt-4 pb-8 md:p-6 md:pt-6 md:pb-12">
                     {children}
                   </main>
                 </div>

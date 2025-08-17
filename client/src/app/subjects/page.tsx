@@ -20,7 +20,7 @@ const SubjectsPage = () => {
           </Button>
         </AddSubjectModal>
       </PageHeader>
-      <div className="flex-1 overflow-auto p-4 sm:p-6">
+      <div className="flex-1 overflow-y-auto pt-6">
         <SubjectsList />
       </div>
     </div>

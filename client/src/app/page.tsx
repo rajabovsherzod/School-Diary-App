@@ -72,10 +72,10 @@ export default async function Home() {
   return (
     <div className="flex flex-col gap-10">
       <div className="text-center">
-        <h1 className="text-5xl font-extrabold tracking-tight text-primary">
+        <h1 className="text-3xl font-extrabold tracking-tight text-primary sm:text-4xl md:text-5xl">
           Boshqaruv Paneli
         </h1>
-        <p className="mt-4 max-w-2xl mx-auto text-lg text-muted-foreground">
+        <p className="mt-2 max-w-2xl mx-auto text-base text-muted-foreground md:mt-4 md:text-lg">
           Tizimning umumiy holati va muhim ko&apos;rsatkichlar bilan tanishing.
         </p>
       </div>

@@ -2,13 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Home,
-  Users,
-  Library,
-  School,
-  CalendarDays,
-} from "lucide-react";
+// School ikonasi bu yerdan olib tashlandi
+import { Home, Users, Library, CalendarDays } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -17,6 +12,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 
@@ -29,14 +25,17 @@ const menuItems = [
 
 export function AppSidebar({ className }: { className?: string }) {
   const pathname = usePathname();
+  const { setOpenMobile } = useSidebar();
 
   return (
-    <Sidebar className={cn("bg-sidebar text-sidebar-foreground", className)}>
-      <SidebarHeader className="p-4 border-b border-sidebar-border">
-        <div className="flex items-center gap-3">
-          <School className="size-7 text-sidebar-foreground" />
-          <h1 className="text-xl font-bold tracking-tight">Kundalik</h1>
-        </div>
+    <Sidebar
+      className={cn(
+        "hidden border-r bg-sidebar text-sidebar-foreground md:block",
+        className
+      )}
+    >
+      <SidebarHeader className="flex h-14 items-center justify-center border-b border-sidebar-border px-4">
+        <h1 className="text-xl font-bold tracking-tight">School Diary</h1>
       </SidebarHeader>
       <SidebarContent className="p-2">
         <SidebarMenu>
@@ -44,7 +43,11 @@ export function AppSidebar({ className }: { className?: string }) {
             const isActive = pathname === item.href;
             return (
               <SidebarMenuItem key={item.href} className="px-2">
-                <Link href={item.href} className="w-full">
+                <Link
+                  href={item.href}
+                  className="w-full"
+                  onClick={() => setOpenMobile(false)}
+                >
                   <SidebarMenuButton
                     isActive={isActive}
                     className="w-full justify-start gap-3 rounded-lg px-3 py-2 text-base font-medium transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground"
