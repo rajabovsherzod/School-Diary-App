@@ -57,7 +57,7 @@ cd School-Diary-App
     ```bash
     npm run dev
     ```
-    Backend endi `localhost:5000` portida ishlaydi.
+    Backend endi `localhost:3002` portida ishlaydi.
 
 ### 5. Frontend Ilovasini Ishga Tushirish (Lokal)
 
