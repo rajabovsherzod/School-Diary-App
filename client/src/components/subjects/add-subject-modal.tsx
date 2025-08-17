@@ -1,20 +1,18 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  subjectFormSchema,
   SubjectFormValues,
+  subjectFormSchema,
 } from "@/lib/validators/subject-validator";
 import { useCreateSubjectMutation } from "@/hooks/mutations/use-subject-mutations";
 
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -28,12 +26,14 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 
 interface AddSubjectModalProps {
   children: React.ReactNode;
 }
 
-const AddSubjectModal: React.FC<AddSubjectModalProps> = ({ children }) => {
+export const AddSubjectModal = ({ children }: AddSubjectModalProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const form = useForm<SubjectFormValues>({
@@ -50,27 +50,29 @@ const AddSubjectModal: React.FC<AddSubjectModalProps> = ({ children }) => {
     }
   };
 
-  const { mutate: createSubject, isPending } = useCreateSubjectMutation(() => {
-    handleOpenChange(false);
-  });
+  const { mutate: createSubject, isPending } = useCreateSubjectMutation();
 
   const onSubmit = (values: SubjectFormValues) => {
-    createSubject(values);
+    createSubject(values, {
+      onSuccess: () => {
+        handleOpenChange(false);
+      },
+    });
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Yangi fan qo&apos;shish</DialogTitle>
-          <DialogDescription>Yangi fan nomini kiriting.</DialogDescription>
+          <DialogDescription>
+            Yangi fan nomini kiriting. Bu nom keyinchalik dars jadvallarida
+            ishlatiladi.
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-4 pt-4"
-          >
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="name"
@@ -78,30 +80,25 @@ const AddSubjectModal: React.FC<AddSubjectModalProps> = ({ children }) => {
                 <FormItem>
                   <FormLabel>Fan nomi</FormLabel>
                   <FormControl>
-                    <Input placeholder="Masalan, Matematika" {...field} />
+                    <Input
+                      placeholder="Masalan, Matematika"
+                      {...field}
+                      disabled={isPending}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <DialogFooter className="pt-4">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => setIsOpen(false)}
-                disabled={isPending}
-              >
-                Bekor qilish
-              </Button>
+            <div className="flex justify-end">
               <Button type="submit" disabled={isPending}>
-                {isPending ? "Saqlanmoqda..." : "Saqlash"}
+                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Saqlash
               </Button>
-            </DialogFooter>
+            </div>
           </form>
         </Form>
       </DialogContent>
     </Dialog>
   );
 };
-
-export default AddSubjectModal;

@@ -3,7 +3,6 @@ import classRouter from "@/api/class/class.route";
 import subjectRouter from "@/api/subject/subject.route";
 import classSubjectRouter from "@/api/class-subject/class-subject.route";
 import scheduleRouter from "@/api/schedule/schedule.route";
-// Eng ishonchli usul: Nisbiy yo'ldan foydalanish
 import statisticsRouter from "../api/statistics/statistics.route";
 
 const mainRouter = Router();

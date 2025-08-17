@@ -7,7 +7,6 @@ import {
   Users,
   Library,
   School,
-  BookCopy,
   CalendarDays,
 } from "lucide-react";
 import {

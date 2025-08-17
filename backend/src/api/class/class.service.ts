@@ -20,7 +20,7 @@ class ClassService {
     });
 
     if (!singleClass) {
-      throw new ApiError(404, "Class not found");
+      throw new ApiError(404, "Sinf topilmadi");
     }
 
     return new ClassDto(singleClass);
@@ -30,13 +30,13 @@ class ClassService {
     const { name, teacher, studentCount } = data;
 
     if (!name || name.trim() === "") {
-      throw new ApiError(400, "Class name is required");
+      throw new ApiError(400, "Sinf nomi talab qilinadi");
     }
     if (!teacher || teacher.trim() === "") {
-      throw new ApiError(400, "Teacher name is required");
+      throw new ApiError(400, "O'qituvchi ismi talab qilinadi");
     }
     if (!studentCount || studentCount <= 0) {
-      throw new ApiError(400, "Student count must be a positive number");
+      throw new ApiError(400, "O'quvchilar soni musbat bo'lishi kerak");
     }
 
     const slug = slugify(name);
@@ -51,10 +51,7 @@ class ClassService {
     });
 
     if (existingClass) {
-      if (existingClass.name.toLowerCase() === name.toLowerCase()) {
-        throw new ApiError(409, `Class with name '${name}' already exists`);
-      }
-      throw new ApiError(409, `Class with slug '${slug}' already exists`);
+      throw new ApiError(409, `'${name}' nomli sinf allaqachon mavjud`);
     }
 
     const newClass = await prisma.class.create({
@@ -67,12 +64,10 @@ class ClassService {
     slug: string,
     data: Partial<ICreateClass>
   ): Promise<ClassDto> {
-    const classToUpdate = await prisma.class.findUnique({
-      where: { slug },
-    });
+    const classToUpdate = await prisma.class.findUnique({ where: { slug } });
 
     if (!classToUpdate) {
-      throw new ApiError(404, "Class not found");
+      throw new ApiError(404, "Sinf topilmadi");
     }
 
     const { name, teacher, studentCount } = data;
@@ -94,10 +89,7 @@ class ClassService {
       });
 
       if (existingClass) {
-        throw new ApiError(
-          409,
-          `A class with this name or slug already exists`
-        );
+        throw new ApiError(409, "Bu nomdagi sinf allaqachon mavjud");
       }
     }
 
@@ -110,7 +102,7 @@ class ClassService {
     }
 
     if (Object.keys(updateData).length === 0) {
-      throw new ApiError(400, "No fields to update");
+      throw new ApiError(400, "Yangilash uchun ma'lumotlar yo'q");
     }
 
     const updatedClass = await prisma.class.update({
@@ -122,30 +114,21 @@ class ClassService {
   }
 
   async deleteClass(slug: string): Promise<ClassDto> {
-    const classToDelete = await prisma.class.findUnique({
-      where: { slug },
-    });
+    const classToDelete = await prisma.class.findUnique({ where: { slug } });
 
     if (!classToDelete) {
-      throw new ApiError(404, "Class not found");
+      throw new ApiError(404, "Sinf topilmadi");
     }
 
     await prisma.$transaction(async (tx: PrismaClient) => {
-      // Delete related schedules first
       await tx.schedule.deleteMany({
-        where: {
-          classId: classToDelete.id,
-        },
+        where: { classId: classToDelete.id },
       });
 
-      // Delete related class-subject links
       await tx.classSubject.deleteMany({
-        where: {
-          classId: classToDelete.id,
-        },
+        where: { classId: classToDelete.id },
       });
 
-      // Finally, delete the class itself
       await tx.class.delete({ where: { slug } });
     });
 

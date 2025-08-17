@@ -23,11 +23,13 @@ const ScheduleView = ({ classSlug }: ScheduleViewProps) => {
     );
   }
 
-  if (!data || data.scheduleEntries.length === 0) {
+  if (!data || !data.scheduleEntries || data.scheduleEntries.length === 0) {
     return (
       <div className="mt-4 rounded-lg border bg-card p-6 text-center">
         <h3 className="text-xl font-semibold">
-          {data?.class.name} uchun dars jadvali hali yaratilmagan.
+          {data?.class?.name
+            ? `${data.class.name} uchun dars jadvali hali yaratilmagan.`
+            : "Dars jadvali hali yaratilmagan."}
         </h3>
       </div>
     );

@@ -1,6 +1,5 @@
 import { ClassSubject, Subject } from "@/generated/prisma";
 
-// Bu DTO endi bog'langan Subject modelini ham o'z ichiga oladi
 type ClassSubjectWithSubject = ClassSubject & { subject: Subject };
 
 export class ClassSubjectDto {
@@ -8,7 +7,7 @@ export class ClassSubjectDto {
   classId: number;
   subjectId: number;
   hoursPerWeek: number;
-  subject: { id: number; name: string }; // Frontend uchun faqat kerakli maydonlar
+  subject: { id: number; name: string }; 
 
   constructor(model: ClassSubjectWithSubject) {
     this.id = model.id;

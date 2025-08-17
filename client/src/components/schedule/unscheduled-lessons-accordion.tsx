@@ -23,31 +23,26 @@ interface UnscheduledLessonsAccordionProps {
   ) => void;
 }
 
-// Kichik Draggable komponent
 interface DraggableItemProps {
   lesson: {
     subjectName: string;
     subjectId: number;
   };
-  index: number; // Noyob ID uchun index qo'shamiz
+  index: number;
 }
 
 const DraggableItem = ({ lesson, index }: DraggableItemProps) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
-      // 1. YECHIM: Har bir elementga NOYOB ID beramiz. Bu ularni mustaqil qiladi.
       id: `${lesson.subjectId}-${index}`,
       data: {
         type: "unscheduled",
-        // Backend uchun kerakli bo'lgan asl ID'ni `data`da saqlaymiz.
         subject: { id: lesson.subjectId, name: lesson.subjectName },
       },
     });
 
-  // XATOLIK TUZATILDI: `style` obyekti to'g'ri tiplashtirildi
   const style: React.CSSProperties = {
     transform: CSS.Translate.toString(transform),
-    // Endi bu oddiy mantiq to'g'ri ishlaydi, chunki har bir element mustaqil.
     visibility: isDragging ? "hidden" : "visible",
   };
 
@@ -67,7 +62,6 @@ const DraggableItem = ({ lesson, index }: DraggableItemProps) => {
   );
 };
 
-// subjectDebts ma'lumotini tekis ro'yxatga aylantiramiz
 const generateUnscheduledList = (debts: ISubjectDebt[]) => {
   const list: { subjectName: string; subjectId: number }[] = [];
   debts.forEach((debt) => {
@@ -80,7 +74,6 @@ const generateUnscheduledList = (debts: ISubjectDebt[]) => {
   return list;
 };
 
-// Manfiy qarzlar ro'yxatini yaratish
 const generateOverScheduledList = (debts: ISubjectDebt[]) => {
   return debts.filter((debt) => debt.scheduleDiff < 0);
 };

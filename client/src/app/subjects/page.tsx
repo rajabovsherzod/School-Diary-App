@@ -1,38 +1,26 @@
 "use client";
 
-import React from "react";
 import SubjectsList from "@/components/subjects/subjects-list";
-import AddSubjectModal from "@/components/subjects/add-subject-modal";
+import { AddSubjectModal } from "@/components/subjects/add-subject-modal";
+import PageHeader from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
-import PageHeader from "@/components/layout/page-header";
-import { useMediaQuery } from "@/hooks/use-media-query";
 
 const SubjectsPage = () => {
-  const isDesktop = useMediaQuery("(min-width: 640px)"); // sm breakpoint
-
   return (
     <div className="flex h-full flex-col">
       <PageHeader
         title="Fanlar"
-        description="Mavjud fanlarni boshqarish va ko'rish."
+        description="Mavjud fanlarni boshqaring yoki yangi fan qo'shing."
       >
         <AddSubjectModal>
-          {isDesktop ? (
-            <Button>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Fan qo&apos;shish
-            </Button>
-          ) : (
-            <Button size="icon">
-              <PlusCircle className="h-5 w-5" />
-              <span className="sr-only">Fan qo&apos;shish</span>
-            </Button>
-          )}
+          <Button>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Fan qo&apos;shish
+          </Button>
         </AddSubjectModal>
       </PageHeader>
-
-      <div className="flex-1 overflow-y-auto pt-4">
+      <div className="flex-1 overflow-auto p-4 sm:p-6">
         <SubjectsList />
       </div>
     </div>

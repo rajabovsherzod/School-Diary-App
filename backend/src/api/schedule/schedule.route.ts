@@ -1,44 +1,27 @@
 import { Router } from "express";
 import ScheduleController from "./schedule.controller";
-// XATO TUZATILDI: Servisning tayyor nusxasi (singleton) import qilinmoqda
 import scheduleService from "./schedule.service";
 import asyncHandler from "@/utils/asyncHandler";
 
 const router = Router();
-// XATO TUZATILDI: Yangi nusxa yaratish o'rniga tayyor nusxa ishlatilmoqda
 const scheduleController = new ScheduleController(scheduleService);
 
-// --- Main Data-Fetching Route ---
-
-// Get the full schedule and subject debt for a class
 router
   .route("/class/:slug")
   .get(asyncHandler(scheduleController.getScheduleBySlug));
 
-// --- Action-Specific Routes ---
-
-// O'ZGARISH: :classId -> :slug va controller metodi o'zgardi
 router
   .route("/generate/class/:slug")
   .post(asyncHandler(scheduleController.generateScheduleForClassBySlug));
 
-// Intelligently move, swap, or insert a schedule entry
-// YECHIM: Yo'lga sinfni aniqlovchi `:slug` parametri qo'shildi.
 router
   .route("/class/:slug/move")
   .put(asyncHandler(scheduleController.moveOrSwapEntry));
 
-router.post(
-  "/:slug/move-swap",
-  asyncHandler(scheduleController.moveOrSwapEntry)
-);
+router
+  .route("/class/:slug/entries")
+  .delete(asyncHandler(scheduleController.deleteEntries));
 
-// --- Resource-Specific Routes ---
-
-// Delete multiple schedule entries
-router.delete("/:slug/entries", asyncHandler(scheduleController.deleteEntries));
-
-// Delete a schedule entry by its ID
 router
   .route("/class/:slug/entry/:entryId")
   .delete(asyncHandler(scheduleController.deleteScheduleEntry));

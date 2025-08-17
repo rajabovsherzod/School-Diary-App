@@ -27,11 +27,9 @@ import {
   useSensors,
   pointerWithin,
 } from "@dnd-kit/core";
-import { IScheduleEntry } from "@/lib/api/schedule/schedule.types";
-import { TMoveSource } from "@/lib/api/schedule/schedule.types";
+import { IScheduleEntry, TMoveSource } from "@/lib/api/schedule/schedule.types";
 import { DeletionToolbar } from "@/components/schedule/deletion-toolbar";
 
-// Sudralayotgan element uchun tip
 type TActiveItem =
   | { type: "entry"; data: IScheduleEntry }
   | { type: "unscheduled"; data: { id: number; name: string } };
@@ -69,10 +67,9 @@ const SchedulePage = () => {
   );
 
   const handleDragStart = (event: DragStartEvent) => {
-    if (deletionMode) return; // O'chirish rejimida DND ishlamaydi
+    if (deletionMode) return;
 
     const { active } = event;
-    // XATOLIK TUZATILDI: active.data.current mavjudligini tekshirish
     if (!active.data.current) return;
 
     const type = active.data.current.type;
@@ -80,7 +77,10 @@ const SchedulePage = () => {
     if (type === "entry") {
       setActiveItem({ type: "entry", data: active.data.current.entry });
     } else if (type === "unscheduled") {
-      setActiveItem({ type: "unscheduled", data: active.data.current.subject });
+      setActiveItem({
+        type: "unscheduled",
+        data: active.data.current.subject,
+      });
     }
   };
 
@@ -88,31 +88,23 @@ const SchedulePage = () => {
     setActiveItem(null);
     const { active, over } = event;
 
-    // XATOLIK TUZATILDI: active.data.current mavjudligini tekshirish
     if (!over || !active || !active.data.current) return;
 
-    // 1. Maqsad (target) katak ma'lumotlarini olamiz
     const [targetDay, targetLesson] = String(over.id).split("-").map(Number);
     if (isNaN(targetDay) || isNaN(targetLesson)) return;
 
-    // 2. Manba (source) ma'lumotlarini olamiz
     const sourceType = active.data.current.type as "entry" | "unscheduled";
     if (!sourceType) return;
 
-    // YECHIM: ID formatini tekshirib, to'g'ri raqamni ajratib olamiz.
     let sourceId: number;
     if (sourceType === "unscheduled") {
-      // Akkordeondan kelgan ID "subjectId-index" formatida (masalan, "25-0").
-      // Bizga faqat birinchi qismi, ya'ni subjectId kerak.
       sourceId = parseInt(String(active.id).split("-")[0], 10);
     } else {
-      // Jadvaldan kelgan ID o'zi to'g'ridan-to'g'ri raqam.
       sourceId = Number(active.id);
     }
 
-    if (isNaN(sourceId)) return; // Agar ID ni ajratib bo'lmasa, chiqib ketamiz.
+    if (isNaN(sourceId)) return;
 
-    // 3. O'z joyiga qaytarilsa, hech narsa qilmaymiz
     if (sourceType === "entry") {
       const sourceEntry = active.data.current.entry as IScheduleEntry;
       if (
@@ -123,38 +115,29 @@ const SchedulePage = () => {
       }
     }
 
-    // 4. Backend uchun 'source' qismini tayyorlaymiz
-    // XATOLIK TUZATILDI: `source` obyekti to'g'ri tiplashtirildi
     let source: TMoveSource;
     if (sourceType === "unscheduled") {
       const subject = active.data.current.subject;
-      if (!subject) return; // Agar subject yo'q bo'lsa, davom etmaymiz
+      if (!subject) return;
       source = { type: "unscheduled", id: sourceId, subject };
     } else {
-      // XATOLIK TUZATILDI: "entry" "scheduled"ga o'zgartirildi
       source = { type: "scheduled", id: sourceId };
     }
 
-    // 5. Agar biror darsning o'rniga qo'yilsa, o'sha darsning asl kunini olamiz
     const overEntry = over.data.current?.entry as IScheduleEntry | undefined;
     const displacedEntryOriginalDay = overEntry?.dayOfWeek;
 
-    // 6. Yakuniy payloadni yig'amiz
     const payload = {
       classSlug: slug,
-      source, // To'g'ri tiplashtirilgan `source` ishlatiladi
+      source,
       targetDay,
       targetLesson,
-      displacedEntryOriginalDay, // Agar bo'sh joyga qo'yilsa, bu 'undefined' bo'ladi
+      displacedEntryOriginalDay,
     };
 
-    console.log("FRONTEND PAYLOAD:", JSON.stringify(payload, null, 2));
     moveOrSwap(payload);
   };
 
-  // --- O'CHIRISH REJIMI UCHUN FUNKSIYALAR (TARTIBGA KELTIRILDI) ---
-
-  // 1. Darsni tanlash/tanlovdan olib tashlash
   const handleToggleSelection = (entryId: number) => {
     if (!deletionMode) return;
 
@@ -163,7 +146,6 @@ const SchedulePage = () => {
       if (newSet.has(entryId)) {
         newSet.delete(entryId);
       } else {
-        // Faqat kerakli sondagi darslarni tanlashga ruxsat beramiz
         if (newSet.size < deletionMode.count) {
           newSet.add(entryId);
         }
@@ -172,24 +154,21 @@ const SchedulePage = () => {
     });
   };
 
-  // 2. O'chirish rejimini boshlash
   const handleStartDeletion = (
     subjectId: number,
     count: number,
     subjectName: string
   ) => {
     setDeletionMode({ subjectId, count, subjectName });
-    setSelectedForDeletion(new Set()); // Boshlashda tanlanganlarni tozalaymiz
-    setAccordionOpen(false); // Jadvalga e'tibor qaratish uchun akkordeonni yopamiz
+    setSelectedForDeletion(new Set());
+    setAccordionOpen(false);
   };
 
-  // 3. O'chirishni bekor qilish
   const handleCancelDeletion = () => {
     setDeletionMode(null);
     setSelectedForDeletion(new Set());
   };
 
-  // 4. O'chirishni tasdiqlash
   const handleConfirmDeletion = () => {
     if (!deletionMode || selectedForDeletion.size === 0) return;
 
@@ -233,7 +212,7 @@ const SchedulePage = () => {
       sensors={sensors}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      collisionDetection={pointerWithin} // Strategiyani o'zgartirdik
+      collisionDetection={pointerWithin}
     >
       <div className="mb-4">
         <PageHeader

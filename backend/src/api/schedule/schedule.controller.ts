@@ -1,5 +1,4 @@
 import { Request, Response } from "express";
-// XATO TUZATILDI: Klassning turi (type) to'g'ri import qilinmoqda
 import { ScheduleService } from "./schedule.service";
 import ApiResponse from "@/utils/api.Response";
 import ApiError from "@/utils/api.Error";
@@ -9,27 +8,15 @@ class ScheduleController {
   constructor(private readonly scheduleService: ScheduleService) {}
 
   getScheduleBySlug = async (req: Request, res: Response) => {
-    try {
-      // YECHIM: Parametrni to'g'ridan-to'g'ri va aniq nom bilan olamiz.
-      // Bu routerdagi nomlanishdan mustaqil ishlaydi.
-      const { slug } = req.params;
-      const schedule = await this.scheduleService.getScheduleBySlug(slug);
-      if (!schedule) {
-        return res.status(404).json({ message: "Schedule not found" });
-      }
-      res.status(200).json(schedule);
-    } catch (error) {
-      res.status(500).json({ message: "Error getting schedule", error });
-    }
+    const { slug } = req.params;
+    const schedule = await this.scheduleService.getScheduleBySlug(slug);
+    res
+      .status(200)
+      .json(new ApiResponse(schedule, "Jadval muvaffaqiyatli olindi."));
   };
 
-  // O'ZGARISH: ID o'rniga SLUG bilan ishlaydi
   generateScheduleForClassBySlug = async (req: Request, res: Response) => {
-    const slug = req.params.slug;
-    if (!slug) {
-      throw new ApiError(400, "Class slug must be provided");
-    }
-
+    const { slug } = req.params;
     const result = await this.scheduleService.generateScheduleForClassBySlug(
       slug
     );
@@ -37,88 +24,65 @@ class ScheduleController {
   };
 
   deleteScheduleEntry = async (req: Request, res: Response) => {
-    try {
-      const { slug, entryId } = req.params;
-      const numericEntryId = parseInt(entryId, 10);
+    const { slug, entryId } = req.params;
+    const numericEntryId = parseInt(entryId, 10);
 
-      if (isNaN(numericEntryId)) {
-        return res.status(400).json({ message: "Invalid entry ID format" });
-      }
-
-      const result = await this.scheduleService.deleteScheduleEntry(
-        slug,
-        numericEntryId
-      );
-      res.status(200).json(result);
-    } catch (error) {
-      if (error instanceof ApiError) {
-        return res.status(error.statusCode).json({ message: error.message });
-      }
-      res.status(500).json({ message: "Error deleting schedule entry", error });
+    if (isNaN(numericEntryId)) {
+      throw new ApiError(400, "Yozuv ID'si noto'g'ri formatda.");
     }
+
+    const result = await this.scheduleService.deleteScheduleEntry(
+      slug,
+      numericEntryId
+    );
+    res
+      .status(200)
+      .json(new ApiResponse(result, "Jadval yozuvi muvaffaqiyatli o'chirildi."));
   };
 
   moveOrSwapEntry = async (req: Request, res: Response) => {
-    // DIAGNOSTIKA: So'rov controllerga yetib kelganini tekshirish
-    console.log(
-      `[ScheduleController] moveOrSwapEntry chaqirildi. Params: ${JSON.stringify(
-        req.params
-      )}, Body: ${JSON.stringify(req.body)}`
-    );
-
-    // YECHIM: `slug` manzil parametrlaridan, qolgan ma'lumotlar tanadan olinadi.
     const { slug } = req.params;
-    const body = req.body;
-
     const payload: IMoveOrSwapPayload = {
       classSlug: slug,
-      ...body,
+      ...req.body,
     };
 
-    try {
-      const result = await this.scheduleService.moveOrSwapEntry(payload);
-      res.status(200).json(result);
-    } catch (error) {
-      if (error instanceof ApiError) {
-        return res.status(error.statusCode).json({ message: error.message });
-      }
-      res
-        .status(500)
-        .json({ message: "Error moving or swapping entry", error });
-    }
+    const result = await this.scheduleService.moveOrSwapEntry(payload);
+    res
+      .status(200)
+      .json(
+        new ApiResponse(
+          result,
+          "Jadval yozuvi muvaffaqiyatli ko'chirildi yoki almashtirildi."
+        )
+      );
   };
 
   deleteEntries = async (req: Request, res: Response) => {
-    try {
-      const { slug } = req.params;
-      const { entryIds, subjectId } = req.body;
+    const { slug } = req.params;
+    const { entryIds, subjectId } = req.body;
 
-      // Asosiy validatsiya
-      if (!Array.isArray(entryIds) || entryIds.length === 0 || !subjectId) {
-        throw new ApiError(
-          400,
-          "Payload xato. entryIds (massiv) va subjectId talab qilinadi."
-        );
-      }
-
-      const classData = await this.scheduleService.getClassBySlug(slug);
-      if (!classData) {
-        throw new ApiError(404, "Class not found");
-      }
-
-      const result = await this.scheduleService.deleteEntries({
-        entryIds,
-        classId: classData.id,
-        subjectId,
-      });
-
-      res.status(200).json(result);
-    } catch (error) {
-      if (error instanceof ApiError) {
-        return res.status(error.statusCode).json({ message: error.message });
-      }
-      res.status(500).json({ message: "Error deleting entries", error });
+    if (!Array.isArray(entryIds) || entryIds.length === 0 || !subjectId) {
+      throw new ApiError(
+        400,
+        "So'rovda xatolik: 'entryIds' (massiv) va 'subjectId' talab qilinadi."
+      );
     }
+
+    const classData = await this.scheduleService.getClassBySlug(slug);
+    if (!classData) {
+      throw new ApiError(404, "Sinf topilmadi.");
+    }
+
+    const result = await this.scheduleService.deleteEntries({
+      entryIds,
+      classId: classData.id,
+      subjectId,
+    });
+
+    res
+      .status(200)
+      .json(new ApiResponse(result, "Jadval yozuvlari muvaffaqiyatli o'chirildi."));
   };
 }
 

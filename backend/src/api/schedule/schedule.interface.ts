@@ -24,15 +24,14 @@ export interface IGenericSuccessMessage {
   message: string;
 }
 
-// Darslarni ko'chirish, almashtirish yoki joylashtirish uchun yagona, kuchli interfeys
 export interface IMoveOrSwapPayload {
   classSlug: string; // Doimo SLUG ishlatiladi
   targetDay: number;
   targetLesson: number;
   source:
-    | { type: "scheduled"; id: number } // Jadvaldagi mavjud darsni ko'chirish
-    | { type: "unscheduled"; id: number }; // Yon paneldan yangi darsni joylashtirish (bu yerda ID - subjectId)
-  displacedEntryOriginalDay?: number; // Frontend'dan keladigan qo'shimcha ma'lumot
+    | { type: "scheduled"; id: number } 
+    | { type: "unscheduled"; id: number }; 
+  displacedEntryOriginalDay?: number; 
 }
 
 export interface IGenericSuccessMessage {

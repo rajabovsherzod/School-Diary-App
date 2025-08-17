@@ -1,5 +1,3 @@
-// Based on API data structure
-
 export interface IFullSchedule {
   id: number;
   name: string;
@@ -31,7 +29,7 @@ export interface IMoveOrSwapPayload {
   source: TMoveSource;
   targetDay: number;
   targetLesson: number;
-  displacedEntryOriginalDay?: number; // Qaysi kundan ko'chirilganini bilish uchun
+  displacedEntryOriginalDay?: number; 
 }
 
 export interface IGenericSuccessMessage {
@@ -50,5 +48,4 @@ export interface ISubjectDebt {
   scheduleDiff: number;
 }
 
-// Bu tip react-query tomonidan keshlanadigan ma'lumotlar strukturasini ifodalaydi
 export type TScheduleQueryData = IFullSchedulePayload;

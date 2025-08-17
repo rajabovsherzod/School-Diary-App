@@ -1,4 +1,3 @@
-// Fayl: src/components/schedule/schedule-table.tsx
 "use client";
 
 import { useMemo } from "react";
@@ -38,7 +37,6 @@ const days = [
 ];
 const dayChunks = [days.slice(0, 3), days.slice(3, 6)];
 
-// Bo'sh yacheyka uchun komponent shu yerda qoladi
 const EmptyCell = ({ id }: { id: string }) => {
   const { setNodeRef, isOver } = useDroppable({ id, data: { type: "empty" } });
 
@@ -130,7 +128,6 @@ export const ScheduleTable = ({
                           const isSelected =
                             entry && selectedForDeletion.has(entry.id);
 
-                          // YECHIM: Natijani har doim boolean bo'lishini ta'minlash (!!)
                           const isSelectionDisabled = !!(
                             !isSelected &&
                             deletionMode &&
@@ -144,14 +141,11 @@ export const ScheduleTable = ({
                                 "p-0 h-12",
                                 dayIndexInChunk < chunk.length - 1 &&
                                   "border-r",
-                                // O'chirish uchun nomzod yacheykalarni ajratib ko'rsatish
                                 isDeletionCandidate &&
                                   "ring-2 ring-destructive/50 ring-inset",
-                                // Tanlangan yacheykalarni boshqacha rangda ko'rsatish
                                 isSelected &&
                                   "ring-destructive bg-destructive/10"
                               )}
-                              // Nomzod yacheyka bosilganda tanlash funksiyasini chaqirish
                               onClick={() =>
                                 isDeletionCandidate &&
                                 onToggleSelection(entry.id)
@@ -159,12 +153,11 @@ export const ScheduleTable = ({
                             >
                               {entry ? (
                                 isDeletionCandidate ? (
-                                  // DIZAYN YANGILANDI: Checkbox chapda, qizil rangda
                                   <div className="h-full w-full flex items-center justify-start gap-x-2 px-3 cursor-pointer">
                                     <Checkbox
                                       checked={isSelected}
                                       disabled={isSelectionDisabled}
-                                      onClick={(e) => e.stopPropagation()} // Parent'ning onClick'ini bloklash
+                                      onClick={(e) => e.stopPropagation()}
                                       className="h-5 w-5 rounded-sm data-[state=checked]:bg-destructive data-[state=checked]:text-white data-[state=checked]:border-destructive"
                                     />
                                     <span className="flex-grow text-center text-sm font-medium">
@@ -172,11 +165,9 @@ export const ScheduleTable = ({
                                     </span>
                                   </div>
                                 ) : (
-                                  // Oddiy yacheyka
                                   <EntryCell entry={entry} />
                                 )
                               ) : (
-                                // O'chirish rejimida bo'sh yacheykalarga dars qo'yishni bloklaymiz
                                 !deletionMode && <EmptyCell id={cellId} />
                               )}
                             </TableCell>

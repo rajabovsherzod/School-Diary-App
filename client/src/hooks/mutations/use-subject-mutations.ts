@@ -1,28 +1,26 @@
-"use client";
-
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
 import {
   createSubject as apiCreateSubject,
   updateSubject as apiUpdateSubject,
   deleteSubject as apiDeleteSubject,
 } from "@/lib/api/subject/subject";
-import { SubjectResponse } from "@/lib/api/subject/subject.types";
-import { handleAxiosError } from "@/lib/utils";
+import { SubjectApiPayload } from "@/lib/validators/subject-validator";
+import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/utils";
+import { AxiosError } from "axios";
+import { ApiError } from "@/lib/utils";
 
-export const useCreateSubjectMutation = (onSuccessCallback?: () => void) => {
+export const useCreateSubjectMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: apiCreateSubject,
-    onSuccess: (data: SubjectResponse) => {
-      toast.success(`"${data.name}" fani muvaffaqiyatli yaratildi!`);
+    mutationFn: (payload: SubjectApiPayload) => apiCreateSubject(payload),
+    onSuccess: (data) => {
+      toast.success(`"${data.name}" fani muvaffaqiyatli qo'shildi!`);
       queryClient.invalidateQueries({ queryKey: ["subjects"] });
-      onSuccessCallback?.();
     },
-    onError: (error) => {
-      toast.error("Fan yaratishda xatolik yuz berdi.");
-      console.error(error);
+    onError: (error: AxiosError<ApiError>) => {
+      toast.error(getErrorMessage(error));
     },
   });
 };
@@ -31,35 +29,20 @@ export const useUpdateSubjectMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: apiUpdateSubject,
-    onMutate: async (newSubjectData) => {
-      await queryClient.cancelQueries({ queryKey: ["subjects"] });
-      const previousSubjects = queryClient.getQueryData<SubjectResponse[]>([
-        "subjects",
-      ]);
-      queryClient.setQueryData<SubjectResponse[]>(["subjects"], (old) =>
-        old
-          ? old.map((subject) =>
-              subject.slug === newSubjectData.slug
-                ? { ...subject, name: newSubjectData.payload.name }
-                : subject
-            )
-          : []
-      );
-      return { previousSubjects };
-    },
-    onError: (err, newSubjectData, context) => {
-      if (context?.previousSubjects) {
-        queryClient.setQueryData(["subjects"], context.previousSubjects);
-      }
-      toast.error("Fan nomini o'zgartirishda xatolik yuz berdi.");
-      console.error(err);
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["subjects"] });
-    },
+    mutationFn: ({
+      slug,
+      payload,
+    }: {
+      slug: string;
+      payload: SubjectApiPayload;
+    }) => apiUpdateSubject({ slug, payload }),
     onSuccess: (data) => {
-      toast.success(`Fan nomi "${data.name}" ga muvaffaqiyatli o'zgartirildi!`);
+      toast.success(`"${data.name}" fani muvaffaqiyatli yangilandi!`);
+      queryClient.invalidateQueries({ queryKey: ["subjects"] });
+      queryClient.invalidateQueries({ queryKey: ["subject", data.slug] });
+    },
+    onError: (error: AxiosError<ApiError>) => {
+      toast.error(getErrorMessage(error));
     },
   });
 };
@@ -74,7 +57,7 @@ export const useDeleteSubjectMutation = () => {
       queryClient.invalidateQueries({ queryKey: ["subjects"] });
     },
     onError: (error) => {
-      handleAxiosError(error, "Fanni o'chirishda xatolik yuz berdi");
+      toast.error(getErrorMessage(error));
     },
   });
 };

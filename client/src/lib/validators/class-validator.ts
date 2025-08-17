@@ -2,12 +2,8 @@ import * as z from "zod";
 
 export const classFormSchema = z.object({
   name: z.string().min(1, { message: "Sinf nomi kiritilishi shart." }),
-  studentCount: z
-    .string()
-    .min(1, { message: "O'quvchilar soni kiritilishi shart." }),
-  teacher: z
-    .string()
-    .min(5, { message: "Sinf rahbari ismi kiritilishi shart." }),
+  studentCount: z.string().min(1, { message: "O'quvchilar soni kiritilishi shart." }),
+  teacher: z.string().min(5, { message: "Sinf rahbari ismi kiritilishi shart." }),
 });
 
 export type ClassFormValues = z.infer<typeof classFormSchema>;

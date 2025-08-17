@@ -10,12 +10,7 @@ import {
   ISubjectDebt,
   TFullScheduleEntry,
 } from "./schedule.interface";
-import {
-  Class,
-  ClassSubject,
-  ScheduleEntry,
-  Subject,
-} from "@/generated/prisma";
+import { Class, ScheduleEntry } from "@/generated/prisma";
 
 class ScheduleService {
   getClassBySlug(slug: string): Promise<Class | null> {
@@ -23,15 +18,10 @@ class ScheduleService {
       where: { slug },
     });
   }
-  /**
-   * Sinf uchun dars jadvalini uning SLUG'i orqali to'liq olib beradi.
-   */
+
   public async getScheduleBySlug(
     slug: string
   ): Promise<IFullSchedulePayload | null> {
-    // DIAGNOSTIKA: Kirib kelgan slug'ni tekshiramiz
-    console.log(`[ScheduleService] Received slug: ${slug}`);
-
     const classData = await prisma.class.findUnique({
       where: { slug },
       include: {
@@ -47,7 +37,6 @@ class ScheduleService {
       return null;
     }
 
-    // Ma'lumotlarni DTO orqali to'g'ri formatga o'tkazish
     const scheduleEntries = classData.schedule.map(
       (entry) => new ScheduleEntryDto(entry as TFullScheduleEntry)
     );
@@ -65,9 +54,6 @@ class ScheduleService {
     };
   }
 
-  /**
-   * Sinf uchun dars jadvalini SLUG orqali generatsiya qiladi.
-   */
   public async generateScheduleForClassBySlug(
     slug: string
   ): Promise<IGenericSuccessMessage> {
@@ -137,9 +123,6 @@ class ScheduleService {
     });
   }
 
-  /**
-   * Darsni ko'chiradi, almashtiradi yoki jadvalga joylashtiradi.
-   */
   public async moveOrSwapEntry(
     payload: IMoveOrSwapPayload
   ): Promise<IGenericSuccessMessage> {
@@ -160,7 +143,6 @@ class ScheduleService {
       }
       const classId = classInfo.id;
 
-      // --- 1-MANTIQ: JADVAL ICHIDA O'ZARO ALMASHTIRISH (scheduled -> scheduled) ---
       if (source.type === "scheduled") {
         const sourceEntry = await tx.scheduleEntry.findUnique({
           where: { id: source.id },
@@ -173,7 +155,6 @@ class ScheduleService {
           where: { classId, dayOfWeek: targetDay, lessonNumber: targetLesson },
         });
 
-        // Agar boriladigan joy bo'sh bo'lsa, shunchaki ko'chiramiz.
         if (!targetEntry) {
           await tx.scheduleEntry.update({
             where: { id: source.id },
@@ -182,7 +163,6 @@ class ScheduleService {
           return { message: "Lesson moved successfully." };
         }
 
-        // Agar boriladigan joyda dars bo'lsa, fanlarni almashtiramiz (oddiy swap).
         const sourceSubjectId = sourceEntry.subjectId;
         const targetSubjectId = targetEntry.subjectId;
 
@@ -198,25 +178,21 @@ class ScheduleService {
         return { message: "Lessons swapped successfully." };
       }
 
-      // --- 2-MANTIQ: AKKORDEONDAN JADVALGA QO'YISH (unscheduled -> any) ---
       if (source.type === "unscheduled") {
         const subjectId = source.id;
         const targetEntry = await tx.scheduleEntry.findFirst({
           where: { classId, dayOfWeek: targetDay, lessonNumber: targetLesson },
         });
 
-        // Agar boriladigan joy bo'sh bo'lsa, shunchaki yaratamiz.
         if (!targetEntry) {
           await tx.scheduleEntry.create({
             data: { classId, subjectId, dayOfWeek: targetDay, lessonNumber: targetLesson },
           });
         } else {
-          // Agar boriladigan joyda dars bo'lsa (ASOSIY MUAMMO).
           if (!displacedEntryOriginalDay) {
             throw new ApiError(400, "'displacedEntryOriginalDay' must be provided to displace a lesson.");
           }
 
-          // "Birinchi bo'sh joy" qidirish YO'Q. Faqat kunning oxiriga qo'yamiz.
           const lessonsOnOriginalDay = await tx.scheduleEntry.findMany({
             where: { classId, dayOfWeek: displacedEntryOriginalDay },
             orderBy: { lessonNumber: "desc" },
@@ -225,11 +201,9 @@ class ScheduleService {
           const lastLessonNumber = lessonsOnOriginalDay.length > 0 ? lessonsOnOriginalDay[0].lessonNumber : 0;
           const newLessonNumberForDisplaced = lastLessonNumber + 1;
 
-          // Atomik operatsiya: Eskisini o'chirish, ikkita yangisini yaratish.
           const displacedSubjectId = targetEntry.subjectId;
           await tx.scheduleEntry.delete({ where: { id: targetEntry.id } });
 
-          // 1. O'chirilgan darsni O'Z KUNINING OXIRIGA yaratamiz.
           await tx.scheduleEntry.create({
             data: {
               classId,
@@ -239,13 +213,11 @@ class ScheduleService {
             },
           });
 
-          // 2. Yangi darsni kerakli joyga yaratamiz.
           await tx.scheduleEntry.create({
             data: { classId, subjectId, dayOfWeek: targetDay, lessonNumber: targetLesson },
           });
         }
 
-        // Fan qarzdorligini kamaytiramiz.
         await tx.classSubject.update({
           where: { classId_subjectId: { classId, subjectId } },
           data: { scheduleDiff: { decrement: 1 } },
@@ -258,9 +230,6 @@ class ScheduleService {
     });
   }
 
-  /**
-   * Jadvaldagi bitta yozuvni uning IDsi orqali o'chiradi.
-   */
   public async deleteScheduleEntry(
     classSlug: string,
     entryId: number
@@ -292,7 +261,6 @@ class ScheduleService {
 
       await tx.scheduleEntry.delete({ where: { id: entryId } });
 
-      // YECHIM: To'g'ri formatdagi xabarni qaytaramiz
       return { message: "Schedule entry deleted successfully." };
     });
   }
@@ -324,7 +292,6 @@ class ScheduleService {
         );
       }
 
-      // scheduleDiff'ni to'g'rilash
       await tx.classSubject.update({
         where: {
           classId_subjectId: {
@@ -345,17 +312,14 @@ class ScheduleService {
     });
   }
 
-  /**
-   * Dars jadvalidagi yozuvni o'chirganda fanning qarzdorligini yangilaydi.
-   */
   private async updateSubjectDebtOnDelete(
     tx: Prisma.TransactionClient,
-    classSlug: string, // ID o'rniga SLUG qabul qilamiz
+    classSlug: string,
     subjectId: number
   ): Promise<void> {
     const classSubject = await tx.classSubject.findFirst({
       where: {
-        class: { slug: classSlug }, // ID o'rniga SLUG bo'yicha qidiramiz
+        class: { slug: classSlug },
         subjectId,
       },
     });

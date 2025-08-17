@@ -7,91 +7,79 @@ class ClassSubjectController {
   constructor(private readonly classSubjectService: ClassSubjectService) {}
 
   getByClassSlug = async (req: Request, res: Response) => {
-    const slug = req.params.slug;
-    const classSubjects = await this.classSubjectService.getAllByClassSlug(
-      slug
-    );
+    const { slug } = req.params;
+    const classSubjects = await this.classSubjectService.getAllByClassSlug(slug);
     res
       .status(200)
       .json(
         new ApiResponse(
           classSubjects,
-          `Class subjects for class ${slug} fetched successfully.`
+          `'${slug}' sinfi uchun fanlar muvaffaqiyatli olindi.`
         )
       );
   };
 
   bulkCreate = async (req: Request, res: Response) => {
-    try {
-      const classId = parseInt(req.params.classId, 10);
-      const { subjects } = req.body;
+    const { classId } = req.params;
+    const { subjects } = req.body;
 
-      if (!Array.isArray(subjects) || subjects.length === 0) {
-        throw new ApiError(400, "'subjects' field must be a non-empty array");
-      }
-
-      const result = await this.classSubjectService.bulkCreateForClass(
-        classId,
-        req.body.subjects
-      );
-      res.json({ success: true, data: result });
-    } catch (error) {
-      throw error;
+    if (!Array.isArray(subjects) || subjects.length === 0) {
+      throw new ApiError(400, "'subjects' maydoni bo'sh bo'lmagan massiv bo'lishi kerak");
     }
+
+    const result = await this.classSubjectService.bulkCreateForClass(
+      parseInt(classId, 10),
+      subjects
+    );
+    res
+      .status(201)
+      .json(new ApiResponse(result, "Fanlar sinfga muvaffaqiyatli biriktirildi."));
   };
 
   reconcileHours = async (req: Request, res: Response) => {
-    const classId = parseInt(req.params.classId, 10);
-    const subjectId = parseInt(req.params.subjectId, 10);
-    const { hours: newHours } = req.body; // Frontend 'hours' nomi bilan yuboradi
+    const { classId, subjectId } = req.params;
+    const { hours } = req.body;
 
-    if (typeof newHours !== "number") {
-      throw new ApiError(400, "'hours' must be a number");
+    if (typeof hours !== "number") {
+      throw new ApiError(400, "'hours' maydoni raqam bo'lishi kerak");
     }
 
     const updatedClassSubject = await this.classSubjectService.reconcileHours(
-      classId,
-      subjectId,
-      newHours
+      parseInt(classId, 10),
+      parseInt(subjectId, 10),
+      hours
     );
-
     res
       .status(200)
       .json(
         new ApiResponse(
           updatedClassSubject,
-          "Subject hours reconciled successfully"
+          "Fanning soatlari muvaffaqiyatli yangilandi."
         )
       );
   };
 
   getUnassignedSubjects = async (req: Request, res: Response) => {
-    const classId = parseInt(req.params.classId, 10);
-    const subjects =
-      await this.classSubjectService.getUnassignedSubjectsForClass(classId);
+    const { classId } = req.params;
+    const subjects = await this.classSubjectService.getUnassignedSubjectsForClass(parseInt(classId, 10));
     res
       .status(200)
       .json(
         new ApiResponse(
           subjects,
-          `Unassigned subjects for class ${classId} fetched successfully.`
+          "Sinfga biriktirilmagan fanlar ro'yxati olindi."
         )
       );
   };
 
   deleteClassSubject = async (req: Request, res: Response) => {
-    const id = parseInt(req.params.id, 10);
-    if (isNaN(id)) {
-      return res.status(400).json({ message: "Invalid ID format" });
-    }
-
-    const deletedEntry = await this.classSubjectService.deleteClassSubject(id);
+    const { id } = req.params;
+    const deletedEntry = await this.classSubjectService.deleteClassSubject(parseInt(id, 10));
     res
       .status(200)
-      .json({
-        data: deletedEntry,
-        message: "Subject assignment deleted successfully",
-      });
+      .json(
+        new ApiResponse(deletedEntry, "Sinfdan fan muvaffaqiyatli o'chirildi.")
+      );
   };
 }
 

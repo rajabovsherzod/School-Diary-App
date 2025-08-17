@@ -15,7 +15,6 @@ import {
   getClassesWithoutSchedule,
 } from "@/lib/api/statistics/statistics";
 
-// FOYDALANUVCHI TALABIGA BINOAN YANGILANGAN STATISTIK KARTOCHKA
 const StatCard = ({
   icon: Icon,
   title,
@@ -72,9 +71,7 @@ export default async function Home() {
 
   return (
     <div className="flex flex-col gap-10">
-      {/* Sarlavha qismi */}
       <div className="text-center">
-        {/* Gradient olib tashlandi, Primary rang ishlatildi */}
         <h1 className="text-5xl font-extrabold tracking-tight text-primary">
           Boshqaruv Paneli
         </h1>
@@ -83,7 +80,6 @@ export default async function Home() {
         </p>
       </div>
 
-      {/* Statistik kartochkalar */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <StatCard
           icon={GraduationCap}
@@ -108,7 +104,6 @@ export default async function Home() {
         />
       </div>
 
-      {/* "JADVALSIZ SINFLAR" BLOKI */}
       <div>
         <h2 className="text-2xl font-bold tracking-tight mb-4">
           Harakat talab qilinadigan vazifalar

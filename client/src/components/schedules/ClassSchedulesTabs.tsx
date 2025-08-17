@@ -32,7 +32,6 @@ const ClassSchedulesTabs = () => {
     );
   }
 
-  // Set the first class as active tab if it's not set yet
   if (!activeTab && classes.length > 0) {
     setActiveTab(classes[0].slug);
   }
@@ -51,7 +50,6 @@ const ClassSchedulesTabs = () => {
         ))}
       </TabsList>
       <TabsContent value={activeTab || ""} className="mt-6">
-        {/* Render only the active tab's content for better performance */}
         {activeTab && <ScheduleView classSlug={activeTab} />}
       </TabsContent>
     </Tabs>

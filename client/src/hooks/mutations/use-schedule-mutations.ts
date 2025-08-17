@@ -35,10 +35,6 @@ export const useMoveOrSwapEntry = () => {
   return useMutation<IGenericSuccessMessage, TApiError, IMoveOrSwapPayload>({
     mutationFn: (payload: IMoveOrSwapPayload) => moveOrSwapEntry(payload),
 
-    // `onMutate` olib tashlandi. Optimistik yangilanish o'rniga,
-    // serverdan javob kelgandan so'ng keshni yangilaymiz.
-    // Bu usul xatoliklarning oldini oladi va ishonchliroq.
-
     onSuccess: () => {
       toast.success("Jadval muvaffaqiyatli yangilandi!");
     },
@@ -50,8 +46,6 @@ export const useMoveOrSwapEntry = () => {
       );
     },
 
-    // Muaffaqiyatli yoki xatolik bilan tugasa ham, keshni yangilaymiz.
-    // Bu UI har doim backend'dagi ma'lumot bilan bir xil bo'lishini ta'minlaydi.
     onSettled: (data, error, variables) => {
       queryClient.invalidateQueries({
         queryKey: ["schedule", variables.classSlug],

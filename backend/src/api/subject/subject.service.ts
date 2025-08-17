@@ -1,4 +1,3 @@
-import { Subject } from "@/generated/prisma";
 import prisma from "@/lib/prisma";
 import ApiError from "@/utils/api.Error";
 import SubjectDto from "./subject.dto";
@@ -112,27 +111,19 @@ class SubjectService {
 
         const subjectId = subjectToDelete.id;
 
-        // 1. Fanning sinflarga biriktirilgan barcha yozuvlarini o'chiramiz.
         await tx.classSubject.deleteMany({
           where: { subjectId },
         });
 
-        // 2. Fanga bog'liq barcha dars jadvali yozuvlarini o'chiramiz.
         await tx.scheduleEntry.deleteMany({
           where: { subjectId },
         });
 
-        // 3. Fanning o'zini o'chiramiz.
         await tx.subject.delete({ where: { slug } });
 
         return new SubjectDto(subjectToDelete);
       });
     } catch (error) {
-      console.error(
-        `[Service Error] Failed to delete subject with slug '${slug}':`,
-        error
-      );
-      // Re-throw the error to be caught by the global error handler
       throw error;
     }
   }
