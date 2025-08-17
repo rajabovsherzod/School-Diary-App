@@ -21,12 +21,12 @@ const SubjectsPage = () => {
           {isDesktop ? (
             <Button>
               <PlusCircle className="mr-2 h-4 w-4" />
-              Fan qo'shish
+              Fan qo&apos;shish
             </Button>
           ) : (
             <Button size="icon">
               <PlusCircle className="h-5 w-5" />
-              <span className="sr-only">Fan qo'shish</span>
+              <span className="sr-only">Fan qo&apos;shish</span>
             </Button>
           )}
         </AddSubjectModal>

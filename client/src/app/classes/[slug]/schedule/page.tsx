@@ -29,6 +29,7 @@ import {
 } from "@dnd-kit/core";
 import { IScheduleEntry, ISubject } from "@/lib/api/schedule/schedule.types";
 import { ISubjectDebt, TMoveSource } from "@/lib/api/schedule/schedule.types";
+import { DeletionToolbar } from "@/components/schedule/deletion-toolbar";
 
 // Sudralayotgan element uchun tip
 type TActiveItem =
@@ -51,6 +52,7 @@ const SchedulePage = () => {
   const [deletionMode, setDeletionMode] = useState<{
     subjectId: number;
     count: number;
+    subjectName: string;
   } | null>(null);
   const [selectedForDeletion, setSelectedForDeletion] = useState<Set<number>>(
     new Set()
@@ -149,31 +151,46 @@ const SchedulePage = () => {
     moveOrSwap(payload);
   };
 
-  const handleStartDeletion = (subjectId: number, count: number) => {
-    setDeletionMode({ subjectId, count });
-    setSelectedForDeletion(new Set()); // Oldingi tanlovlarni tozalash
-    toast.info(`Iltimos, jadvaldan ${count} ta darsni tanlab o'chiring.`);
-  };
+  // --- O'CHIRISH REJIMI UCHUN FUNKSIYALAR (TARTIBGA KELTIRILDI) ---
 
-  const handleConfirmGenerate = () => {
-    generateSchedule(slug, {
-      onSuccess: () => {
-        toast.success(`'${slug}' sinfi uchun jadval muvaffaqiyatli yaratildi!`);
-        setConfirmOpen(false);
-      },
-      onError: (error: TApiError) => {
-        toast.error(
-          error.response?.data?.message ||
-            `'${slug}' uchun jadval yaratishda xatolik`
-        );
-        setConfirmOpen(false);
-      },
+  // 1. Darsni tanlash/tanlovdan olib tashlash
+  const handleToggleSelection = (entryId: number) => {
+    if (!deletionMode) return;
+
+    setSelectedForDeletion((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(entryId)) {
+        newSet.delete(entryId);
+      } else {
+        // Faqat kerakli sondagi darslarni tanlashga ruxsat beramiz
+        if (newSet.size < deletionMode.count) {
+          newSet.add(entryId);
+        }
+      }
+      return newSet;
     });
   };
 
-  const handleDeleteEntries = () => {
-    if (!deletionMode || selectedForDeletion.size !== deletionMode.count)
-      return;
+  // 2. O'chirish rejimini boshlash
+  const handleStartDeletion = (
+    subjectId: number,
+    count: number,
+    subjectName: string
+  ) => {
+    setDeletionMode({ subjectId, count, subjectName });
+    setSelectedForDeletion(new Set()); // Boshlashda tanlanganlarni tozalaymiz
+    setAccordionOpen(false); // Jadvalga e'tibor qaratish uchun akkordeonni yopamiz
+  };
+
+  // 3. O'chirishni bekor qilish
+  const handleCancelDeletion = () => {
+    setDeletionMode(null);
+    setSelectedForDeletion(new Set());
+  };
+
+  // 4. O'chirishni tasdiqlash
+  const handleConfirmDeletion = () => {
+    if (!deletionMode || selectedForDeletion.size === 0) return;
 
     deleteEntries(
       {
@@ -190,18 +207,20 @@ const SchedulePage = () => {
     );
   };
 
-  const handleCancelDeletion = () => {
-    setDeletionMode(null);
-    setSelectedForDeletion(new Set());
-  };
-
-  const handleToggleSelection = (entryId: number) => {
-    if (selectedForDeletion.has(entryId)) {
-      selectedForDeletion.delete(entryId);
-    } else {
-      selectedForDeletion.add(entryId);
-    }
-    setSelectedForDeletion(new Set(selectedForDeletion));
+  const handleConfirmGenerate = () => {
+    generateSchedule(slug, {
+      onSuccess: () => {
+        toast.success(`'${slug}' sinfi uchun jadval muvaffaqiyatli yaratildi!`);
+        setConfirmOpen(false);
+      },
+      onError: (error: TApiError) => {
+        toast.error(
+          error.response?.data?.message ||
+            `'${slug}' uchun jadval yaratishda xatolik`
+        );
+        setConfirmOpen(false);
+      },
+    });
   };
 
   if (isLoading) {
@@ -256,22 +275,12 @@ const SchedulePage = () => {
       )}
 
       {deletionMode && (
-        <div className="flex items-center justify-center gap-4 mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-          <p className="text-sm font-medium text-destructive">
-            Tanlanganlar: {selectedForDeletion.size} / {deletionMode.count}
-          </p>
-          <Button onClick={handleCancelDeletion} variant="outline" size="sm">
-            Bekor qilish
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            disabled={selectedForDeletion.size !== deletionMode.count}
-            onClick={handleDeleteEntries}
-          >
-            O&apos;chirish
-          </Button>
-        </div>
+        <DeletionToolbar
+          deletionModeData={deletionMode}
+          selectedCount={selectedForDeletion.size}
+          onConfirm={handleConfirmDeletion}
+          onCancel={handleCancelDeletion}
+        />
       )}
 
       {scheduleData && scheduleData.scheduleEntries.length > 0 ? (

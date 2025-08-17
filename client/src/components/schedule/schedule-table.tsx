@@ -19,7 +19,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 interface ScheduleTableProps {
   schedule: IScheduleEntry[];
   slug: string;
-  deletionMode: { subjectId: number; count: number } | null;
+  deletionMode: {
+    subjectId: number;
+    count: number;
+    subjectName: string;
+  } | null;
   selectedForDeletion: Set<number>;
   onToggleSelection: (entryId: number) => void;
 }
@@ -123,9 +127,15 @@ export const ScheduleTable = ({
                           const isDeletionCandidate =
                             deletionMode &&
                             entry &&
-                            entry.subjectId === deletionMode.subjectId;
+                            entry.subject.id === deletionMode.subjectId;
                           const isSelected =
                             entry && selectedForDeletion.has(entry.id);
+
+                          // YECHIM: Kerakli miqdor tanlanganda, qolgan checkbox'larni bloklash
+                          const isSelectionDisabled =
+                            !isSelected &&
+                            deletionMode &&
+                            selectedForDeletion.size >= deletionMode.count;
 
                           return (
                             <TableCell
@@ -134,11 +144,14 @@ export const ScheduleTable = ({
                                 "p-0 h-12",
                                 dayIndexInChunk < chunk.length - 1 &&
                                   "border-r",
+                                // O'chirish uchun nomzod yacheykalarni ajratib ko'rsatish
                                 isDeletionCandidate &&
                                   "ring-2 ring-destructive/50 ring-inset",
+                                // Tanlangan yacheykalarni boshqacha rangda ko'rsatish
                                 isSelected &&
                                   "ring-destructive bg-destructive/10"
                               )}
+                              // Nomzod yacheyka bosilganda tanlash funksiyasini chaqirish
                               onClick={() =>
                                 isDeletionCandidate &&
                                 onToggleSelection(entry.id)
@@ -146,17 +159,24 @@ export const ScheduleTable = ({
                             >
                               {entry ? (
                                 isDeletionCandidate ? (
-                                  <div className="relative h-full w-full flex items-center justify-center p-1 text-center text-sm font-medium cursor-pointer">
+                                  // DIZAYN YANGILANDI: Checkbox chapda, qizil rangda
+                                  <div className="h-full w-full flex items-center justify-start gap-x-2 px-3 cursor-pointer">
                                     <Checkbox
                                       checked={isSelected}
-                                      className="absolute top-1 right-1 h-4 w-4"
+                                      disabled={isSelectionDisabled}
+                                      onClick={(e) => e.stopPropagation()} // Parent'ning onClick'ini bloklash
+                                      className="h-5 w-5 rounded-sm data-[state=checked]:bg-destructive data-[state=checked]:text-white data-[state=checked]:border-destructive"
                                     />
-                                    {entry.subject.name}
+                                    <span className="flex-grow text-center text-sm font-medium">
+                                      {entry.subject.name}
+                                    </span>
                                   </div>
                                 ) : (
+                                  // Oddiy yacheyka
                                   <EntryCell entry={entry} />
                                 )
                               ) : (
+                                // O'chirish rejimida bo'sh yacheykalarga dars qo'yishni bloklaymiz
                                 !deletionMode && <EmptyCell id={cellId} />
                               )}
                             </TableCell>

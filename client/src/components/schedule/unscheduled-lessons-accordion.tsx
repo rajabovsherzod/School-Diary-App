@@ -16,7 +16,11 @@ interface UnscheduledLessonsAccordionProps {
   subjectDebts: ISubjectDebt[];
   isOpen: boolean;
   onValueChange: (value: string) => void;
-  onStartDeletion: (subjectId: number, count: number) => void;
+  onStartDeletion: (
+    subjectId: number,
+    count: number,
+    subjectName: string
+  ) => void;
 }
 
 // Kichik Draggable komponent
@@ -151,7 +155,8 @@ export const UnscheduledLessonsAccordion = ({
                         onClick={() =>
                           onStartDeletion(
                             debt.subjectId,
-                            Math.abs(debt.scheduleDiff)
+                            Math.abs(debt.scheduleDiff),
+                            debt.subjectName
                           )
                         }
                         className="p-1.5 hover:bg-destructive/20 rounded-md transition-colors"

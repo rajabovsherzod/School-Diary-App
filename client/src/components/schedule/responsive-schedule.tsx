@@ -7,18 +7,22 @@ import { ScheduleGrid } from "./schedule-grid";
 
 interface ResponsiveScheduleProps {
   schedule: IScheduleEntry[];
-  deletionMode: { subjectId: number; count: number } | null;
+  slug: string;
+  deletionMode: {
+    subjectId: number;
+    count: number;
+    subjectName: string;
+  } | null;
   selectedForDeletion: Set<number>;
   onToggleSelection: (entryId: number) => void;
-  slug: string;
 }
 
 export const ResponsiveSchedule = ({
   schedule,
+  slug,
   deletionMode,
   selectedForDeletion,
   onToggleSelection,
-  slug,
 }: ResponsiveScheduleProps) => {
   const isDesktop = useMediaQuery("(min-width: 1024px)");
 
@@ -26,10 +30,10 @@ export const ResponsiveSchedule = ({
     return (
       <ScheduleTable
         schedule={schedule}
+        slug={slug}
         deletionMode={deletionMode}
         selectedForDeletion={selectedForDeletion}
         onToggleSelection={onToggleSelection}
-        slug={slug}
       />
     );
   }
@@ -37,10 +41,10 @@ export const ResponsiveSchedule = ({
   return (
     <ScheduleGrid
       schedule={schedule}
+      slug={slug}
       deletionMode={deletionMode}
       selectedForDeletion={selectedForDeletion}
       onToggleSelection={onToggleSelection}
-      slug={slug}
     />
   );
 };
