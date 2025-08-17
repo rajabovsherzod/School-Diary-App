@@ -1,20 +1,19 @@
 import React from "react";
 import PageHeader from "@/components/layout/page-header";
-import { Button } from "@/components/ui/button";
-import ClassesList from "@/components/classes/classes-list";
+import ClassSchedulesTabs from "@/components/schedules/ClassSchedulesTabs";
 
 const SchedulesPage = () => {
   return (
     <>
       <PageHeader
-        title="Test Sahifasi"
-        description="Bu PageHeader va ClassesList komponentlarini test qilish uchun."
+        title="Dars Jadvallari"
+        description="Bu yerda barcha sinflarning dars jadvallarini ko'rishingiz mumkin."
       >
-        <Button>Test Tugmasi</Button>
+        <></>
       </PageHeader>
 
       <div className="mt-8">
-        <ClassesList />
+        <ClassSchedulesTabs />
       </div>
     </>
   );
