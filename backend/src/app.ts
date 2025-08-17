@@ -16,7 +16,10 @@ app.use(cors(corsOptions));
 app.use(express.json());
 
 // API Routes
+// Barcha router'lar markazlashtirilgan holda mainRouter orqali ulanadi
 app.use("/api", mainRouter);
+
+// Error Handler (should be the last middleware)
 app.use(errorHandler);
 
 export default app;

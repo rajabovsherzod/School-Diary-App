@@ -78,6 +78,21 @@ class ClassSubjectController {
         )
       );
   };
+
+  deleteClassSubject = async (req: Request, res: Response) => {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid ID format" });
+    }
+
+    const deletedEntry = await this.classSubjectService.deleteClassSubject(id);
+    res
+      .status(200)
+      .json({
+        data: deletedEntry,
+        message: "Subject assignment deleted successfully",
+      });
+  };
 }
 
 export default ClassSubjectController;

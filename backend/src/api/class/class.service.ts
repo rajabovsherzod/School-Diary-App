@@ -1,14 +1,17 @@
+import { ClassDto } from "./class.dto";
+import { ICreateClass } from "./class.interface";
+import ApiError from "../../utils/api.Error";
+import { sortClassesNaturally } from "../../utils/array.helpers";
+import slugify from "../../utils/slugify";
 import { Class } from "@/generated/prisma";
 import prisma from "@/lib/prisma";
-import ApiError from "@/utils/api.Error";
-import slugify from "@/utils/slugify";
-import { ICreateClass } from "./class.interface";
-import { ClassDto } from "./class.dto";
+import { PrismaClient } from "@prisma/client";
 
 class ClassService {
   async getAllClasses(): Promise<ClassDto[]> {
-    const classes = await prisma.class.findMany();
-    return classes.map((klass) => new ClassDto(klass));
+    const classes: Class[] = await prisma.class.findMany();
+    const sortedClasses = sortClassesNaturally(classes);
+    return sortedClasses.map((klass) => new ClassDto(klass));
   }
 
   async getClassBySlug(slug: string): Promise<ClassDto | null> {
@@ -127,7 +130,24 @@ class ClassService {
       throw new ApiError(404, "Class not found");
     }
 
-    await prisma.class.delete({ where: { slug } });
+    await prisma.$transaction(async (tx: PrismaClient) => {
+      // Delete related schedules first
+      await tx.schedule.deleteMany({
+        where: {
+          classId: classToDelete.id,
+        },
+      });
+
+      // Delete related class-subject links
+      await tx.classSubject.deleteMany({
+        where: {
+          classId: classToDelete.id,
+        },
+      });
+
+      // Finally, delete the class itself
+      await tx.class.delete({ where: { slug } });
+    });
 
     return new ClassDto(classToDelete);
   }

@@ -138,6 +138,42 @@ class ClassSubjectService {
       return new ClassSubjectDto(updatedEntry);
     });
   }
+
+  async deleteClassSubject(id: number) {
+    try {
+      return await prisma.$transaction(async (tx) => {
+        // 1. O'chiriladigan ClassSubject yozuvini topamiz
+        const classSubjectToDelete = await tx.classSubject.findUnique({
+          where: { id },
+        });
+
+        if (!classSubjectToDelete) {
+          throw new ApiError(404, "Class-subject assignment not found");
+        }
+
+        const { classId, subjectId } = classSubjectToDelete;
+
+        // 2. Shu sinf va fanga oid barcha dars jadvali yozuvlarini o'chiramiz
+        await tx.scheduleEntry.deleteMany({
+          where: {
+            classId,
+            subjectId,
+          },
+        });
+
+        // 3. Asosiy ClassSubject yozuvini o'chiramiz
+        await tx.classSubject.delete({ where: { id } });
+
+        return classSubjectToDelete;
+      });
+    } catch (error) {
+      console.error(
+        `[Service Error] Failed to delete class-subject with id '${id}':`,
+        error
+      );
+      throw error; // Re-throw to be caught by global error handler
+    }
+  }
 }
 
 export default ClassSubjectService;

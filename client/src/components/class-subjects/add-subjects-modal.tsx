@@ -19,7 +19,7 @@ import { useGetUnassignedSubjects } from "@/hooks/queries/use-class-subject-quer
 import { useEffect, useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useBulkCreateClassSubjectsMutation } from "@/hooks/mutations/use-class-subject-mutations";
-import { Loader2, PlusCircle } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import {
   addSubjectsFormSchema,
   AddSubjectsFormValues,

@@ -27,4 +27,7 @@ router
   .route("/class/:classId/unassigned-subjects")
   .get(asyncHandler(classSubjectController.getUnassignedSubjects));
 
+// ID bo'yicha o'chirish
+router.delete("/:id", asyncHandler(classSubjectController.deleteClassSubject));
+
 export default router;

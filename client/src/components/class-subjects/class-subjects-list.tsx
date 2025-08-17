@@ -12,15 +12,18 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Pencil } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { EditHoursModal } from "./edit-hours-modal";
 import { ClassSubject } from "@/lib/api/class-subject/class-subject.types";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { CustomModal } from "@/components/ui/custom-modal";
+import { useDeleteClassSubjectMutation } from "@/hooks/mutations/use-class-subject-mutations";
 
 interface ClassSubjectsListProps {
   slug: string;
@@ -31,8 +34,22 @@ const ClassSubjectsList = ({ slug }: ClassSubjectsListProps) => {
   const [editingSubject, setEditingSubject] = useState<ClassSubject | null>(
     null
   );
+  const [subjectToDelete, setSubjectToDelete] = useState<ClassSubject | null>(
+    null
+  );
+
+  const deleteMutation = useDeleteClassSubjectMutation(slug);
 
   const subjects = Array.isArray(data) ? data : [];
+
+  const handleConfirmDelete = () => {
+    if (!subjectToDelete) return;
+    deleteMutation.mutate(subjectToDelete.id, {
+      onSuccess: () => {
+        setSubjectToDelete(null);
+      },
+    });
+  };
 
   if (isLoading) {
     return (
@@ -129,23 +146,31 @@ const ClassSubjectsList = ({ slug }: ClassSubjectsListProps) => {
               <TableCell className="border-r text-center">
                 {subject.hoursPerWeek}
               </TableCell>
-              <TableCell className="flex justify-center">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        className="h-8 w-8 p-0"
-                        onClick={() => setEditingSubject(subject)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Tahrirlash</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+              <TableCell className="text-center">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="h-8 w-8 p-0">
+                      <span className="sr-only">Menyuni ochish</span>
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onClick={() => setEditingSubject(subject)}
+                    >
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Tahrirlash
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="text-red-600 focus:text-red-600"
+                      onClick={() => setSubjectToDelete(subject)}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      O&apos;chirish
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </TableCell>
             </TableRow>
           ))}
@@ -162,6 +187,17 @@ const ClassSubjectsList = ({ slug }: ClassSubjectsListProps) => {
           classSubject={editingSubject}
           classId={editingSubject.classId}
           slug={slug}
+        />
+      )}
+      {subjectToDelete && (
+        <CustomModal
+          isOpen={!!subjectToDelete}
+          onClose={() => setSubjectToDelete(null)}
+          title="Fanni sinfdan o'chirish"
+          description={`Haqiqatan ham "${subjectToDelete.subject?.name}" fanini ushbu sinfdan o'chirmoqchimisiz? Bu amalni orqaga qaytarib bo'lmaydi. Bu fanga oid barcha dars jadvallari ham o'chiriladi.`}
+          onConfirm={handleConfirmDelete}
+          confirmText="O'chirish"
+          isPending={deleteMutation.isPending}
         />
       )}
     </div>
