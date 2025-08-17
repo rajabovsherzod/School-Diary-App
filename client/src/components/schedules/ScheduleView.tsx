@@ -44,16 +44,15 @@ const ScheduleView = ({ classSlug }: ScheduleViewProps) => {
 
   const scheduleMap: { [day: number]: { [lesson: number]: IScheduleEntry } } =
     {};
-  const maxLessonsPerDay: { [day: number]: number } = {};
+  let maxLessonsOverall = 0;
 
   data.scheduleEntries.forEach((entry) => {
     if (!scheduleMap[entry.dayOfWeek]) {
       scheduleMap[entry.dayOfWeek] = {};
-      maxLessonsPerDay[entry.dayOfWeek] = 0;
     }
     scheduleMap[entry.dayOfWeek][entry.lessonNumber] = entry;
-    if (entry.lessonNumber > maxLessonsPerDay[entry.dayOfWeek]) {
-      maxLessonsPerDay[entry.dayOfWeek] = entry.lessonNumber;
+    if (entry.lessonNumber > maxLessonsOverall) {
+      maxLessonsOverall = entry.lessonNumber;
     }
   });
 
@@ -62,7 +61,6 @@ const ScheduleView = ({ classSlug }: ScheduleViewProps) => {
       {days.map((dayName, index) => {
         const dayIndex = index + 1;
         const lessonsForDay = scheduleMap[dayIndex] || {};
-        const maxLessons = maxLessonsPerDay[dayIndex] || 0;
 
         return (
           <div
@@ -73,8 +71,8 @@ const ScheduleView = ({ classSlug }: ScheduleViewProps) => {
               {dayName}
             </h4>
             <div className="divide-y flex-grow">
-              {maxLessons > 0 ? (
-                Array.from({ length: maxLessons }, (_, i) => i + 1).map(
+              {maxLessonsOverall > 0 ? (
+                Array.from({ length: maxLessonsOverall }, (_, i) => i + 1).map(
                   (lessonNumber) => {
                     const lesson = lessonsForDay[lessonNumber];
                     return (
@@ -91,7 +89,7 @@ const ScheduleView = ({ classSlug }: ScheduleViewProps) => {
                           </span>
                         ) : (
                           <span className="p-3 truncate text-muted-foreground italic">
-                            — Bo'sh —
+                            Dars belgilanmagan
                           </span>
                         )}
                       </div>
@@ -101,7 +99,7 @@ const ScheduleView = ({ classSlug }: ScheduleViewProps) => {
               ) : (
                 <div className="flex items-center justify-center h-full p-8">
                   <p className="text-center text-muted-foreground">
-                    Darslar yo'q
+                    Darslar yo&apos;q
                   </p>
                 </div>
               )}

@@ -3,14 +3,6 @@
 import { useGetClassSubjects } from "@/hooks/queries/use-class-subject-queries";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { EditHoursModal } from "./edit-hours-modal";
@@ -52,46 +44,7 @@ const ClassSubjectsList = ({ slug }: ClassSubjectsListProps) => {
   };
 
   if (isLoading) {
-    return (
-      <div className="rounded-md border">
-        <Table className="w-full">
-          <TableHeader>
-            <TableRow className="border-b-0 bg-primary hover:bg-primary">
-              <TableHead className="border-r text-center text-primary-foreground">
-                T/r
-              </TableHead>
-              <TableHead className="border-r text-primary-foreground">
-                Fan nomi
-              </TableHead>
-              <TableHead className="border-r text-center text-primary-foreground">
-                Haftalik soat
-              </TableHead>
-              <TableHead className="text-center text-primary-foreground">
-                Amallar
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {[...Array(3)].map((_, i) => (
-              <TableRow key={i} className="border-b">
-                <TableCell className="border-r text-center">
-                  <Skeleton className="h-5 w-8 mx-auto" />
-                </TableCell>
-                <TableCell className="border-r">
-                  <Skeleton className="h-5 w-48" />
-                </TableCell>
-                <TableCell className="border-r text-center">
-                  <Skeleton className="h-5 w-12 mx-auto" />
-                </TableCell>
-                <TableCell className="text-center">
-                  <Skeleton className="h-8 w-8 mx-auto" />
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    );
+    return <TableSkeleton />;
   }
 
   if (isError) {
@@ -116,66 +69,75 @@ const ClassSubjectsList = ({ slug }: ClassSubjectsListProps) => {
   }
 
   return (
-    <div className="rounded-md border">
-      <Table className="w-full">
-        <TableHeader>
-          <TableRow className="border-b-0 bg-primary hover:bg-primary">
-            <TableHead className="border-r text-center text-primary-foreground">
-              T/r
-            </TableHead>
-            <TableHead className="border-r text-primary-foreground">
-              Fan nomi
-            </TableHead>
-            <TableHead className="border-r text-center text-primary-foreground">
-              Haftalik soat
-            </TableHead>
-            <TableHead className="text-center text-primary-foreground">
-              Amallar
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {subjects.map((subject: ClassSubject, index: number) => (
-            <TableRow key={subject.id} className="border-b">
-              <TableCell className="font-medium border-r text-center">
-                {index + 1}
-              </TableCell>
-              <TableCell className="border-r">
-                {subject.subject?.name}
-              </TableCell>
-              <TableCell className="border-r text-center">
-                {subject.hoursPerWeek}
-              </TableCell>
-              <TableCell className="text-center">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0">
-                      <span className="sr-only">Menyuni ochish</span>
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onClick={() => setEditingSubject(subject)}
-                    >
-                      <Pencil className="mr-2 h-4 w-4" />
-                      Tahrirlash
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      className="text-red-600 focus:text-red-600"
-                      onClick={() => setSubjectToDelete(subject)}
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      O&apos;chirish
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+    <>
+      <div className="rounded-md border overflow-y-auto max-h-[calc(100vh-250px)]">
+        <div className="relative w-full">
+          <table className="w-full caption-bottom text-sm">
+            <thead className="[&_tr]:border-b sticky top-0 bg-primary z-10">
+              <tr className="border-b-0 transition-colors hover:bg-primary">
+                <th className="h-10 w-[50px] border-r px-2 text-center align-middle font-medium text-primary-foreground">
+                  T/r
+                </th>
+                <th className="h-10 border-r px-2 text-left align-middle font-medium text-primary-foreground">
+                  Fan nomi
+                </th>
+                <th className="h-10 w-[150px] border-r px-2 text-center align-middle font-medium text-primary-foreground">
+                  Haftalik soat
+                </th>
+                <th className="h-10 w-[100px] px-2 text-center align-middle font-medium text-primary-foreground">
+                  Amallar
+                </th>
+              </tr>
+            </thead>
+            <tbody className="[&_tr:last-child]:border-0">
+              {subjects.map((subject: ClassSubject, index: number) => (
+                <tr
+                  key={subject.id}
+                  className="border-b transition-colors hover:bg-muted/50"
+                >
+                  <td className="w-[50px] border-r p-2 text-center align-middle font-medium">
+                    {index + 1}
+                  </td>
+                  <td className="whitespace-nowrap border-r p-2 align-middle">
+                    {subject.subject?.name}
+                  </td>
+                  <td className="w-[150px] border-r p-2 text-center align-middle">
+                    {subject.hoursPerWeek}
+                  </td>
+                  <td className="w-[100px] p-2 align-middle">
+                    <div className="flex justify-center">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Menyuni ochish</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => setEditingSubject(subject)}
+                          >
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Tahrirlash
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-red-600 focus:text-red-600"
+                            onClick={() => setSubjectToDelete(subject)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            O&apos;chirish
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
       {editingSubject && (
         <EditHoursModal
           open={!!editingSubject}
@@ -200,8 +162,51 @@ const ClassSubjectsList = ({ slug }: ClassSubjectsListProps) => {
           isPending={deleteMutation.isPending}
         />
       )}
-    </div>
+    </>
   );
 };
+
+const TableSkeleton = () => (
+  <div className="rounded-md border">
+    <table className="w-full caption-bottom text-sm">
+      <thead className="[&_tr]:border-b">
+        <tr className="border-b-0 bg-primary transition-colors hover:bg-primary">
+          <th className="h-10 w-[50px] border-r px-2 text-center align-middle font-medium text-primary-foreground">
+            T/r
+          </th>
+          <th className="h-10 border-r px-2 text-left align-middle font-medium text-primary-foreground">
+            Fan nomi
+          </th>
+          <th className="h-10 w-[150px] border-r px-2 text-center align-middle font-medium text-primary-foreground">
+            Haftalik soat
+          </th>
+          <th className="h-10 w-[100px] px-2 text-center align-middle font-medium text-primary-foreground">
+            Amallar
+          </th>
+        </tr>
+      </thead>
+      <tbody className="[&_tr:last-child]:border-0">
+        {[...Array(5)].map((_, i) => (
+          <tr key={i} className="border-b transition-colors hover:bg-muted/50">
+            <td className="border-r p-2 text-center align-middle">
+              <Skeleton className="mx-auto h-5 w-8" />
+            </td>
+            <td className="border-r p-2 align-middle">
+              <Skeleton className="h-5 w-48" />
+            </td>
+            <td className="border-r p-2 text-center align-middle">
+              <Skeleton className="mx-auto h-5 w-12" />
+            </td>
+            <td className="p-2 align-middle">
+              <div className="flex justify-center">
+                <Skeleton className="h-8 w-8" />
+              </div>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+);
 
 export default ClassSubjectsList;

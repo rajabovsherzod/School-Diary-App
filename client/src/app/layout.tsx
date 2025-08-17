@@ -50,9 +50,11 @@ export default function RootLayout({
                   </SidebarTrigger>
                   <h1 className="text-xl font-semibold">School Diary</h1>
                 </header>
-                <div className="flex overflow-auto">
+                <div className="flex overflow-hidden">
                   <AppSidebar />
-                  <main className="w-full p-4 md:p-6">{children}</main>
+                  <main className="container w-full px-4 pt-4 pb-8 md:px-6 md:pt-6 md:pb-12 overflow-auto">
+                    {children}
+                  </main>
                 </div>
                 <Toaster />
               </div>

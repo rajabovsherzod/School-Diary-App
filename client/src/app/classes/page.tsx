@@ -34,11 +34,7 @@ const ClassesPage = () => {
       </PageHeader>
 
       <div className="flex-1 overflow-y-auto pt-6">
-        <div className="container h-full">
-          <div className="px-4">
-            <ClassesList />
-          </div>
-        </div>
+        <ClassesList />
       </div>
       {isModalOpen && (
         <ClassFormModal

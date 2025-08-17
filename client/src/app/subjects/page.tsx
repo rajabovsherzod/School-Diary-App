@@ -33,9 +33,7 @@ const SubjectsPage = () => {
       </PageHeader>
 
       <div className="flex-1 overflow-y-auto pt-4">
-        <div className="px-4">
-          <SubjectsList />
-        </div>
+        <SubjectsList />
       </div>
     </div>
   );
