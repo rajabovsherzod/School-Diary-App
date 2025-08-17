@@ -50,7 +50,6 @@ const EmptyCell = ({ id }: { id: string }) => {
 
 export const ScheduleGrid = ({
   schedule,
-  slug,
   deletionMode,
   selectedForDeletion,
   onToggleSelection,
@@ -104,11 +103,12 @@ export const ScheduleGrid = ({
                     const isSelected =
                       entry && selectedForDeletion.has(entry.id);
 
-                    // YECHIM: Kerakli miqdor tanlanganda, qolgan checkbox'larni bloklash
-                    const isSelectionDisabled =
+                    // YECHIM: Natijani har doim boolean bo'lishini ta'minlash (!!)
+                    const isSelectionDisabled = !!(
                       !isSelected &&
                       deletionMode &&
-                      selectedForDeletion.size >= deletionMode.count;
+                      selectedForDeletion.size >= deletionMode.count
+                    );
 
                     return (
                       <TableRow

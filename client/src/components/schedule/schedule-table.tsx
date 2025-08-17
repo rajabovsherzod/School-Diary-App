@@ -1,7 +1,7 @@
 // Fayl: src/components/schedule/schedule-table.tsx
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { IScheduleEntry } from "@/lib/api/schedule/schedule.types";
 import {
@@ -55,7 +55,6 @@ const EmptyCell = ({ id }: { id: string }) => {
 
 export const ScheduleTable = ({
   schedule,
-  slug,
   deletionMode,
   selectedForDeletion,
   onToggleSelection,
@@ -131,11 +130,12 @@ export const ScheduleTable = ({
                           const isSelected =
                             entry && selectedForDeletion.has(entry.id);
 
-                          // YECHIM: Kerakli miqdor tanlanganda, qolgan checkbox'larni bloklash
-                          const isSelectionDisabled =
+                          // YECHIM: Natijani har doim boolean bo'lishini ta'minlash (!!)
+                          const isSelectionDisabled = !!(
                             !isSelected &&
                             deletionMode &&
-                            selectedForDeletion.size >= deletionMode.count;
+                            selectedForDeletion.size >= deletionMode.count
+                          );
 
                           return (
                             <TableCell

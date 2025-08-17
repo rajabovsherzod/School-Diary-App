@@ -29,7 +29,7 @@ export const DeletionToolbar = ({
     <div className="fixed bottom-4 right-4 z-50 p-4 bg-background border rounded-lg shadow-xl w-full max-w-sm animate-in fade-in-90 slide-in-from-bottom-10 duration-300">
       <div className="flex justify-between items-start mb-3">
         <div>
-          <h4 className="font-semibold text-lg">O'chirish Rejimi</h4>
+          <h4 className="font-semibold text-lg">O&apos;chirish Rejimi</h4>
           <p className="text-sm text-muted-foreground">
             <span className="font-bold text-destructive">{subjectName}</span> fanidan{" "}
             <span className="font-bold text-destructive">{count}</span> ta darsni tanlang.

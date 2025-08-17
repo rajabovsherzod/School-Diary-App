@@ -27,8 +27,8 @@ import {
   useSensors,
   pointerWithin,
 } from "@dnd-kit/core";
-import { IScheduleEntry, ISubject } from "@/lib/api/schedule/schedule.types";
-import { ISubjectDebt, TMoveSource } from "@/lib/api/schedule/schedule.types";
+import { IScheduleEntry } from "@/lib/api/schedule/schedule.types";
+import { TMoveSource } from "@/lib/api/schedule/schedule.types";
 import { DeletionToolbar } from "@/components/schedule/deletion-toolbar";
 
 // Sudralayotgan element uchun tip
@@ -44,7 +44,8 @@ const SchedulePage = () => {
   const { mutate: generateSchedule, isPending: isGenerating } =
     useGenerateScheduleBySlug();
   const { mutate: moveOrSwap } = useMoveOrSwapEntry();
-  const { mutate: deleteEntries } = useDeleteScheduleEntries();
+  const { mutate: deleteEntries, isPending: isDeleting } =
+    useDeleteScheduleEntries();
 
   const [isConfirmOpen, setConfirmOpen] = useState(false);
   const [isAccordionOpen, setAccordionOpen] = useState(true);
@@ -280,6 +281,7 @@ const SchedulePage = () => {
           selectedCount={selectedForDeletion.size}
           onConfirm={handleConfirmDeletion}
           onCancel={handleCancelDeletion}
+          isPending={isDeleting}
         />
       )}
 
