@@ -6,103 +6,81 @@ School Diary - bu maktab kundaligi tizimini boshqarish uchun mo'ljallangan to'li
 
 - **Frontend**: Next.js, React, TypeScript, Tailwind CSS
 - **Backend**: Node.js, Express.js, TypeScript, Prisma ORM
-- **Ma'lumotlar bazasi**: PostgreSQL
+- **Ma'lumotlar bazasi**: PostgreSQL (Docker yordamida)
 
 ---
 
-## Ishga Tushirish (Setup)
+## Loyihani Ishga Tushirish
 
-Loyihani ikki xil usulda ishga tushirish mumkin: Docker orqali (tavsiya etiladi) yoki lokal kompyuterda.
+Ushbu yo'riqnoma ma'lumotlar bazasini Docker yordamida, backend va frontendni esa lokal kompyuterda ishga tushirishni ko'rsatadi.
 
-### 1. Docker orqali Ishga Tushirish (Tavsiya Etiladi)
-
-Bu eng oson va qulay usul. Faqat [Docker](https://www.docker.com/products/docker-desktop/) o'rnatilgan bo'lishi kerak.
-
-1.  `.env` faylini yarating. `backend` papkasidagi `.env.example` faylidan nusxa oling va loyihaning asosiy papkasiga (`root`) joylashtiring.
-
-    ```bash
-    cp backend/.env.example .env
-    ```
-
-    Bu fayl `docker-compose.yml` tomonidan ishlatiladi. Kerak bo'lsa, o'zgarish kiritishingiz mumkin.
-
-2.  Loyihani ishga tushiring:
-
-    ```bash
-    docker-compose up --build -d
-    ```
-
-    `-d` flugi terminallarni bloklamasdan, fon rejimida ishga tushiradi.
-
-3.  Birinchi marta ishga tushganda, ma'lumotlar bazasi scheemasini qo'llash uchun alohida terminalda quyidagi buyruqni bajaring:
-    ```bash
-    docker-compose exec backend npx prisma db push
-    ```
-
-Endi frontend [http://localhost:3000](http://localhost:3000) manzilida, backend esa [http://localhost:5000](http://localhost:5000) manzilida ishlaydi.
-
-Loyihani to'xtatish uchun:
-
-```bash
-docker-compose down
-```
-
-### 2. Lokal Ishga Tushirish (Docker'siz)
-
-#### Talablar
+### 1. Talablar
 
 - [Node.js](https://nodejs.org/en/) (v18 yoki undan yuqori)
 - `npm` (Node.js bilan birga keladi)
-- [PostgreSQL](https://www.postgresql.org/download/) ma'lumotlar bazasi
+- [Docker](https://www.docker.com/products/docker-desktop/)
 
-#### Backend Sozlamalari
+### 2. Loyihani Yuklab Olish
 
-1.  Backend papkasiga o'ting:
+```bash
+git clone https://github.com/rajabovsherzod/School-Diary-App.git
+cd School-Diary-App
+```
 
+### 3. Ma'lumotlar Bazasini Ishga Tushirish (Docker orqali)
+
+1.  `backend` papkasiga o'ting:
     ```bash
     cd backend
     ```
+2.  PostgreSQL ma'lumotlar bazasi konteynerini fon rejimida ishga tushiring:
+    ```bash
+    docker-compose up -d
+    ```
+    Bu buyruq `backend/docker-compose.yml` faylini ishlatib, `kundalik_db` nomli konteyner yaratadi. Ma'lumotlar bazasi endi `localhost:5432` portida ishlaydi.
 
-2.  Kerakli paketlarni o'rnating:
+### 4. Backend Serverini Sozlash va Ishga Tushirish (Lokal)
 
+1.  Hozir siz `backend` papkasida bo'lishingiz kerak. Kerakli paketlarni o'rnating:
     ```bash
     npm install
     ```
-
-3.  `.env.example` faylidan nusxa olib, `.env` faylini yarating va uni o'zingizning ma'lumotlar bazasi sozlamalaringiz bilan to'ldiring:
-
+2.  `.env.example` faylidan nusxa olib, `.env` faylini yarating. Undagi `DATABASE_URL` Docker orqali ishlayotgan ma'lumotlar bazasiga to'g'ri kelishi kerak (odatda standart sozlamalarni o'zgartirish shart emas).
     ```bash
     cp .env.example .env
     ```
-
-4.  Prisma schemani ma'lumotlar bazasiga qo'llang:
-
+3.  Prisma schemani ma'lumotlar bazasiga qo'llang:
     ```bash
     npx prisma db push
     ```
-
-5.  Backend serverini ishga tushiring:
+4.  Backend serverini ishga tushiring:
     ```bash
     npm run dev
     ```
+    Backend endi `localhost:5000` portida ishlaydi.
 
-#### Frontend Sozlamalari
+### 5. Frontend Ilovasini Ishga Tushirish (Lokal)
 
-1.  Alohida terminal ochib, client papkasiga o'ting:
-
+1.  Yangi terminal oching va loyihaning asosiy papkasidan `client` papkasiga o'ting:
     ```bash
     cd client
     ```
-
 2.  Kerakli paketlarni o'rnating:
-
     ```bash
     npm install
     ```
-
 3.  Frontend ilovasini ishga tushiring:
     ```bash
     npm run dev
     ```
+    Frontend endi [http://localhost:3000](http://localhost:3000) manzilida ochiladi.
 
-Endi ilova [http://localhost:3000](http://localhost:3000) manzilida ochilishi kerak.
+---
+
+### Loyihani To'xtatish
+
+1.  Backend va frontend ishlayotgan terminallarda `Ctrl + C` tugmalarini bosing.
+2.  Ma'lumotlar bazasi konteynerini to'xtatish uchun `backend` papkasida quyidagi buyruqni bajaring:
+    ```bash
+    docker-compose down
+    ```
