@@ -6,26 +6,56 @@ School Diary - bu maktab kundaligi tizimini boshqarish uchun mo'ljallangan to'li
 
 - **Frontend**: Next.js, React, TypeScript, Tailwind CSS
 - **Backend**: Node.js, Express.js, TypeScript, Prisma ORM
-- **Ma'lumotlar bazasi**: PostgreSQL (tavsiya etiladi)
+- **Ma'lumotlar bazasi**: PostgreSQL
 
-## Lokal Ishga Tushirish (Local Setup)
+---
 
-Loyihani o'z kompyuteringizda ishga tushirish uchun quyidagi qadamlarni bajaring:
+## Ishga Tushirish (Setup)
 
-### 1. Talablar
+Loyihani ikki xil usulda ishga tushirish mumkin: Docker orqali (tavsiya etiladi) yoki lokal kompyuterda.
 
-- [Node.js](https://nodejs.org/en/) (v18 yoki undan yuqori)
-- [pnpm](https://pnpm.io/installation) (yoki npm/yarn)
-- [PostgreSQL](https://www.postgresql.org/download/) ma'lumotlar bazasi
+### 1. Docker orqali Ishga Tushirish (Tavsiya Etiladi)
 
-### 2. Loyihani Yuklab Olish
+Bu eng oson va qulay usul. Faqat [Docker](https://www.docker.com/products/docker-desktop/) o'rnatilgan bo'lishi kerak.
+
+1.  `.env` faylini yarating. `backend` papkasidagi `.env.example` faylidan nusxa oling va loyihaning asosiy papkasiga (`root`) joylashtiring.
+
+    ```bash
+    cp backend/.env.example .env
+    ```
+
+    Bu fayl `docker-compose.yml` tomonidan ishlatiladi. Kerak bo'lsa, o'zgarish kiritishingiz mumkin.
+
+2.  Loyihani ishga tushiring:
+
+    ```bash
+    docker-compose up --build -d
+    ```
+
+    `-d` flugi terminallarni bloklamasdan, fon rejimida ishga tushiradi.
+
+3.  Birinchi marta ishga tushganda, ma'lumotlar bazasi scheemasini qo'llash uchun alohida terminalda quyidagi buyruqni bajaring:
+    ```bash
+    docker-compose exec backend npx prisma db push
+    ```
+
+Endi frontend [http://localhost:3000](http://localhost:3000) manzilida, backend esa [http://localhost:5000](http://localhost:5000) manzilida ishlaydi.
+
+Loyihani to'xtatish uchun:
 
 ```bash
-git clone https://github.com/rajabovsherzod/School-Diary-App.git
-cd School-Diary-App
+docker-compose down
 ```
 
-### 3. Backend Sozlamalari
+### 2. Lokal Ishga Tushirish (Docker'siz)
+
+#### Talablar
+
+- [Node.js](https://nodejs.org/en/) (v18 yoki undan yuqori)
+- `npm` (Node.js bilan birga keladi)
+- [PostgreSQL](https://www.postgresql.org/download/) ma'lumotlar bazasi
+
+#### Backend Sozlamalari
 
 1.  Backend papkasiga o'ting:
 
@@ -36,7 +66,7 @@ cd School-Diary-App
 2.  Kerakli paketlarni o'rnating:
 
     ```bash
-    pnpm install
+    npm install
     ```
 
 3.  `.env.example` faylidan nusxa olib, `.env` faylini yarating va uni o'zingizning ma'lumotlar bazasi sozlamalaringiz bilan to'ldiring:
@@ -48,15 +78,15 @@ cd School-Diary-App
 4.  Prisma schemani ma'lumotlar bazasiga qo'llang:
 
     ```bash
-    pnpm prisma db push
+    npx prisma db push
     ```
 
 5.  Backend serverini ishga tushiring:
     ```bash
-    pnpm dev
+    npm run dev
     ```
 
-### 4. Frontend Sozlamalari
+#### Frontend Sozlamalari
 
 1.  Alohida terminal ochib, client papkasiga o'ting:
 
@@ -67,12 +97,12 @@ cd School-Diary-App
 2.  Kerakli paketlarni o'rnating:
 
     ```bash
-    pnpm install
+    npm install
     ```
 
 3.  Frontend ilovasini ishga tushiring:
     ```bash
-    pnpm dev
+    npm run dev
     ```
 
 Endi ilova [http://localhost:3000](http://localhost:3000) manzilida ochilishi kerak.
