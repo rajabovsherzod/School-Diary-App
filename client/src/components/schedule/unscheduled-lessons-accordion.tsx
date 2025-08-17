@@ -40,9 +40,10 @@ const DraggableItem = ({ lesson, index }: DraggableItemProps) => {
       },
     });
 
-  const style = {
+  // XATOLIK TUZATILDI: `style` obyekti to'g'ri tiplashtirildi
+  const style: React.CSSProperties = {
     transform: CSS.Translate.toString(transform),
-    // 2. Endi bu oddiy mantiq to'g'ri ishlaydi, chunki har bir element mustaqil.
+    // Endi bu oddiy mantiq to'g'ri ishlaydi, chunki har bir element mustaqil.
     visibility: isDragging ? "hidden" : "visible",
   };
 

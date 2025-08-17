@@ -28,6 +28,7 @@ import {
   pointerWithin,
 } from "@dnd-kit/core";
 import { IScheduleEntry, ISubject } from "@/lib/api/schedule/schedule.types";
+import { ISubjectDebt, TMoveSource } from "@/lib/api/schedule/schedule.types";
 
 // Sudralayotgan element uchun tip
 type TActiveItem =
@@ -68,7 +69,10 @@ const SchedulePage = () => {
     if (deletionMode) return; // O'chirish rejimida DND ishlamaydi
 
     const { active } = event;
-    const type = active.data.current?.type;
+    // XATOLIK TUZATILDI: active.data.current mavjudligini tekshirish
+    if (!active.data.current) return;
+
+    const type = active.data.current.type;
 
     if (type === "entry") {
       setActiveItem({ type: "entry", data: active.data.current.entry });
@@ -81,14 +85,15 @@ const SchedulePage = () => {
     setActiveItem(null);
     const { active, over } = event;
 
-    if (!over || !active) return;
+    // XATOLIK TUZATILDI: active.data.current mavjudligini tekshirish
+    if (!over || !active || !active.data.current) return;
 
     // 1. Maqsad (target) katak ma'lumotlarini olamiz
     const [targetDay, targetLesson] = String(over.id).split("-").map(Number);
     if (isNaN(targetDay) || isNaN(targetLesson)) return;
 
     // 2. Manba (source) ma'lumotlarini olamiz
-    const sourceType = active.data.current?.type as "entry" | "unscheduled";
+    const sourceType = active.data.current.type as "entry" | "unscheduled";
     if (!sourceType) return;
 
     // YECHIM: ID formatini tekshirib, to'g'ri raqamni ajratib olamiz.
@@ -106,7 +111,7 @@ const SchedulePage = () => {
 
     // 3. O'z joyiga qaytarilsa, hech narsa qilmaymiz
     if (sourceType === "entry") {
-      const sourceEntry = active.data.current?.entry as IScheduleEntry;
+      const sourceEntry = active.data.current.entry as IScheduleEntry;
       if (
         sourceEntry.dayOfWeek === targetDay &&
         sourceEntry.lessonNumber === targetLesson
@@ -116,13 +121,16 @@ const SchedulePage = () => {
     }
 
     // 4. Backend uchun 'source' qismini tayyorlaymiz
-    const sourcePayload = {
-      type: sourceType === "entry" ? "scheduled" : "unscheduled",
-      id: sourceId,
-      ...(sourceType === "unscheduled" && {
-        subject: active.data.current?.subject,
-      }),
-    };
+    // XATOLIK TUZATILDI: `source` obyekti to'g'ri tiplashtirildi
+    let source: TMoveSource;
+    if (sourceType === "unscheduled") {
+      const subject = active.data.current.subject;
+      if (!subject) return; // Agar subject yo'q bo'lsa, davom etmaymiz
+      source = { type: "unscheduled", id: sourceId, subject };
+    } else {
+      // XATOLIK TUZATILDI: "entry" "scheduled"ga o'zgartirildi
+      source = { type: "scheduled", id: sourceId };
+    }
 
     // 5. Agar biror darsning o'rniga qo'yilsa, o'sha darsning asl kunini olamiz
     const overEntry = over.data.current?.entry as IScheduleEntry | undefined;
@@ -131,7 +139,7 @@ const SchedulePage = () => {
     // 6. Yakuniy payloadni yig'amiz
     const payload = {
       classSlug: slug,
-      source: sourcePayload,
+      source, // To'g'ri tiplashtirilgan `source` ishlatiladi
       targetDay,
       targetLesson,
       displacedEntryOriginalDay, // Agar bo'sh joyga qo'yilsa, bu 'undefined' bo'ladi
