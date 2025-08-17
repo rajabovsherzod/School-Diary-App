@@ -29,10 +29,17 @@ export const generateScheduleForClassBySlug = async (
 export const moveOrSwapEntry = async (
   payload: IMoveOrSwapPayload
 ): Promise<IGenericSuccessMessage> => {
-  const { classSlug, ...rest } = payload;
+  const { classSlug, ...body } = payload;
+
+  // MUHIM: Agar `displacedEntryOriginalDay` bo'lmasa, uni backendga yubormaymiz.
+  // Bu backend validatsiyasidan muammosiz o'tishni ta'minlaydi.
+  if (body.displacedEntryOriginalDay === undefined) {
+    delete body.displacedEntryOriginalDay;
+  }
+
   const { data } = await $axios.put<IGenericSuccessMessage>(
     `/schedules/class/${classSlug}/move`,
-    rest
+    body
   );
   return data;
 };

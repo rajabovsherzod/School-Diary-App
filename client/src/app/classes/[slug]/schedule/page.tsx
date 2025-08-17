@@ -89,8 +89,20 @@ const SchedulePage = () => {
 
     // 2. Manba (source) ma'lumotlarini olamiz
     const sourceType = active.data.current?.type as "entry" | "unscheduled";
-    const sourceId = Number(active.id); // ID har doim raqam bo'lishini ta'minlaymiz
-    if (!sourceType || isNaN(sourceId)) return;
+    if (!sourceType) return;
+
+    // YECHIM: ID formatini tekshirib, to'g'ri raqamni ajratib olamiz.
+    let sourceId: number;
+    if (sourceType === "unscheduled") {
+      // Akkordeondan kelgan ID "subjectId-index" formatida (masalan, "25-0").
+      // Bizga faqat birinchi qismi, ya'ni subjectId kerak.
+      sourceId = parseInt(String(active.id).split("-")[0], 10);
+    } else {
+      // Jadvaldan kelgan ID o'zi to'g'ridan-to'g'ri raqam.
+      sourceId = Number(active.id);
+    }
+
+    if (isNaN(sourceId)) return; // Agar ID ni ajratib bo'lmasa, chiqib ketamiz.
 
     // 3. O'z joyiga qaytarilsa, hech narsa qilmaymiz
     if (sourceType === "entry") {

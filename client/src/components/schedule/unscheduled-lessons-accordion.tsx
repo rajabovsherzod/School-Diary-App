@@ -31,20 +31,19 @@ interface DraggableItemProps {
 const DraggableItem = ({ lesson, index }: DraggableItemProps) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
-      // MUHIM O'ZGARISH: ID endi matn emas, to'g'ridan-to'g'ri fan IDsi (number)
-      // Bu butun drag-n-drop zanjiri uchun to'g'ri ma'lumotni ta'minlaydi.
-      id: lesson.subjectId,
+      // 1. YECHIM: Har bir elementga NOYOB ID beramiz. Bu ularni mustaqil qiladi.
+      id: `${lesson.subjectId}-${index}`,
       data: {
         type: "unscheduled",
-        // ID'ni noyob qilish uchun index'ni dataga qo'shamiz, lekin asosiy ID o'zgarmaydi
-        uniqueId: `${lesson.subjectId}-${index}`,
+        // Backend uchun kerakli bo'lgan asl ID'ni `data`da saqlaymiz.
         subject: { id: lesson.subjectId, name: lesson.subjectName },
       },
     });
 
   const style = {
-    // transform: CSS.Translate.toString(transform), // BU QATOR O'CHIRILADI
-    opacity: isDragging ? 0.5 : 1, // Sudralayotganda yarim shaffof qilish
+    transform: CSS.Translate.toString(transform),
+    // 2. Endi bu oddiy mantiq to'g'ri ishlaydi, chunki har bir element mustaqil.
+    visibility: isDragging ? "hidden" : "visible",
   };
 
   return (
