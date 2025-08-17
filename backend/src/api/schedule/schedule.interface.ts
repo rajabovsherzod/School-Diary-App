@@ -32,4 +32,9 @@ export interface IMoveOrSwapPayload {
   source:
     | { type: "scheduled"; id: number } // Jadvaldagi mavjud darsni ko'chirish
     | { type: "unscheduled"; id: number }; // Yon paneldan yangi darsni joylashtirish (bu yerda ID - subjectId)
+  displacedEntryOriginalDay?: number; // Frontend'dan keladigan qo'shimcha ma'lumot
+}
+
+export interface IGenericSuccessMessage {
+  message: string;
 }

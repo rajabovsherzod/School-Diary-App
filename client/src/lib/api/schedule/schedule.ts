@@ -1,5 +1,4 @@
 import $axios from "../axios";
-import { TApiError } from "@/types/api-error";
 import {
   IFullSchedulePayload,
   IGenericSuccessMessage,
@@ -30,7 +29,6 @@ export const generateScheduleForClassBySlug = async (
 export const moveOrSwapEntry = async (
   payload: IMoveOrSwapPayload
 ): Promise<IGenericSuccessMessage> => {
-  // YECHIM: `classSlug` URL'ga, qolgan ma'lumotlar tanaga (body) joylashtirildi.
   const { classSlug, ...rest } = payload;
   const { data } = await $axios.put<IGenericSuccessMessage>(
     `/schedules/class/${classSlug}/move`,

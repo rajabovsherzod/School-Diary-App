@@ -143,12 +143,14 @@ class ScheduleService {
   public async moveOrSwapEntry(
     payload: IMoveOrSwapPayload
   ): Promise<IGenericSuccessMessage> {
-    console.log(
-      "Backend Service -> Received payload:",
-      JSON.stringify(payload, null, 2)
-    ); // Batafsil log
     return prisma.$transaction(async (tx) => {
-      const { classSlug, targetDay, targetLesson, source } = payload;
+      const {
+        classSlug,
+        targetDay,
+        targetLesson,
+        source,
+        displacedEntryOriginalDay,
+      } = payload;
 
       const classInfo = await tx.class.findUnique({
         where: { slug: classSlug },
@@ -157,41 +159,22 @@ class ScheduleService {
         throw new ApiError(404, `Class with slug '${classSlug}' not found`);
       }
       const classId = classInfo.id;
-      console.log(`Backend Service -> Found classId: ${classId}`); // Log
 
-      // 1-holat: Jadvaldagi darsni ko'chirish yoki almashtirish
+      // --- 1-MANTIQ: JADVAL ICHIDA O'ZARO ALMASHTIRISH (scheduled -> scheduled) ---
       if (source.type === "scheduled") {
         const sourceEntry = await tx.scheduleEntry.findUnique({
           where: { id: source.id },
         });
-        console.log(
-          "Backend Service -> Found sourceEntry:",
-          JSON.stringify(sourceEntry, null, 2)
-        ); // Log
-
-        if (!sourceEntry || sourceEntry.classId !== classId) {
-          throw new ApiError(
-            404,
-            "Source schedule entry not found or mismatch"
-          );
+        if (!sourceEntry) {
+          throw new ApiError(404, "Source schedule entry not found");
         }
 
-        console.log(
-          `Backend Service -> Searching for target at day: ${targetDay}, lesson: ${targetLesson}`
-        ); // Log
         const targetEntry = await tx.scheduleEntry.findFirst({
           where: { classId, dayOfWeek: targetDay, lessonNumber: targetLesson },
         });
-        console.log(
-          "Backend Service -> Found targetEntry:",
-          JSON.stringify(targetEntry, null, 2)
-        ); // ENG MUHIM LOG
 
-        // Agar boriladigan joy bo'sh bo'lsa, shunchaki ko'chiramiz
+        // Agar boriladigan joy bo'sh bo'lsa, shunchaki ko'chiramiz.
         if (!targetEntry) {
-          console.log(
-            "Backend Service -> Target not found. Attempting to MOVE entry."
-          ); // Log
           await tx.scheduleEntry.update({
             where: { id: source.id },
             data: { dayOfWeek: targetDay, lessonNumber: targetLesson },
@@ -199,21 +182,14 @@ class ScheduleService {
           return { message: "Lesson moved successfully." };
         }
 
-        // Agar boriladigan joyda boshqa dars bo'lsa, o'rin almashtiramiz
-        // YAKUNIY YECHIM: Ikkala yozuvning fan ID'larini bitta tranzaksiyada almashtiramiz.
-        // Bu har qanday "Unique Constraint" xatosining oldini oladi.
+        // Agar boriladigan joyda dars bo'lsa, fanlarni almashtiramiz (oddiy swap).
         const sourceSubjectId = sourceEntry.subjectId;
         const targetSubjectId = targetEntry.subjectId;
 
-        console.log(
-          `Backend Service -> Target found. Attempting to SWAP subjects: ${sourceSubjectId} <-> ${targetSubjectId}`
-        ); // Log
-        // Tranzaksiya ichida ikkita mustaqil yangilanish
         await tx.scheduleEntry.update({
           where: { id: source.id },
           data: { subjectId: targetSubjectId },
         });
-
         await tx.scheduleEntry.update({
           where: { id: targetEntry.id },
           data: { subjectId: sourceSubjectId },
@@ -222,76 +198,60 @@ class ScheduleService {
         return { message: "Lessons swapped successfully." };
       }
 
-      // 2-holat: Akkordeondan yangi darsni jadvalga joylashtirish
+      // --- 2-MANTIQ: AKKORDEONDAN JADVALGA QO'YISH (unscheduled -> any) ---
       if (source.type === "unscheduled") {
         const subjectId = source.id;
         const targetEntry = await tx.scheduleEntry.findFirst({
           where: { classId, dayOfWeek: targetDay, lessonNumber: targetLesson },
         });
 
-        // Agar boriladigan joy band bo'lsa, eski darsni suramiz
-        if (targetEntry) {
-          // Jadvaldagi barcha darslarni olamiz va bo'sh joy qidiramiz
-          const allEntries = await tx.scheduleEntry.findMany({
-            where: { classId },
-            orderBy: [{ dayOfWeek: "asc" }, { lessonNumber: "asc" }],
+        // Agar boriladigan joy bo'sh bo'lsa, shunchaki yaratamiz.
+        if (!targetEntry) {
+          await tx.scheduleEntry.create({
+            data: { classId, subjectId, dayOfWeek: targetDay, lessonNumber: targetLesson },
+          });
+        } else {
+          // Agar boriladigan joyda dars bo'lsa (ASOSIY MUAMMO).
+          if (!displacedEntryOriginalDay) {
+            throw new ApiError(400, "'displacedEntryOriginalDay' must be provided to displace a lesson.");
+          }
+
+          // "Birinchi bo'sh joy" qidirish YO'Q. Faqat kunning oxiriga qo'yamiz.
+          const lessonsOnOriginalDay = await tx.scheduleEntry.findMany({
+            where: { classId, dayOfWeek: displacedEntryOriginalDay },
+            orderBy: { lessonNumber: "desc" },
+          });
+          
+          const lastLessonNumber = lessonsOnOriginalDay.length > 0 ? lessonsOnOriginalDay[0].lessonNumber : 0;
+          const newLessonNumberForDisplaced = lastLessonNumber + 1;
+
+          // Atomik operatsiya: Eskisini o'chirish, ikkita yangisini yaratish.
+          const displacedSubjectId = targetEntry.subjectId;
+          await tx.scheduleEntry.delete({ where: { id: targetEntry.id } });
+
+          // 1. O'chirilgan darsni O'Z KUNINING OXIRIGA yaratamiz.
+          await tx.scheduleEntry.create({
+            data: {
+              classId,
+              subjectId: displacedSubjectId,
+              dayOfWeek: displacedEntryOriginalDay,
+              lessonNumber: newLessonNumberForDisplaced,
+            },
           });
 
-          const occupiedSlots = new Set(
-            allEntries.map((e) => `${e.dayOfWeek}-${e.lessonNumber}`)
-          );
-
-          let firstEmptySlot: {
-            dayOfWeek: number;
-            lessonNumber: number;
-          } | null = null;
-          const maxLessons = Math.max(
-            ...allEntries.map((e) => e.lessonNumber),
-            7
-          );
-
-          // Birinchi bo'sh katakchani topish
-          for (let day = 1; day <= 6; day++) {
-            for (let lesson = 1; lesson <= maxLessons + 1; lesson++) {
-              if (!occupiedSlots.has(`${day}-${lesson}`)) {
-                firstEmptySlot = { dayOfWeek: day, lessonNumber: lesson };
-                break;
-              }
-            }
-            if (firstEmptySlot) break;
-          }
-
-          if (!firstEmptySlot) {
-            throw new ApiError(400, "Jadvalda bo'sh joy topilmadi.");
-          }
-
-          // Eski darsni topilgan bo'sh joyga ko'chiramiz
-          await tx.scheduleEntry.update({
-            where: { id: targetEntry.id },
-            data: {
-              dayOfWeek: firstEmptySlot.dayOfWeek,
-              lessonNumber: firstEmptySlot.lessonNumber,
-            },
+          // 2. Yangi darsni kerakli joyga yaratamiz.
+          await tx.scheduleEntry.create({
+            data: { classId, subjectId, dayOfWeek: targetDay, lessonNumber: targetLesson },
           });
         }
 
-        // Yangi darsni kerakli joyga yaratamiz
-        await tx.scheduleEntry.create({
-          data: {
-            classId,
-            subjectId,
-            dayOfWeek: targetDay,
-            lessonNumber: targetLesson,
-          },
-        });
-
-        // Fan qarzdorligini (scheduleDiff) kamaytiramiz
+        // Fan qarzdorligini kamaytiramiz.
         await tx.classSubject.update({
           where: { classId_subjectId: { classId, subjectId } },
           data: { scheduleDiff: { decrement: 1 } },
         });
 
-        return { message: "Dars muvaffaqiyatli joylashtirildi." };
+        return { message: "Lesson placed successfully." };
       }
 
       throw new ApiError(400, "Invalid source type specified");

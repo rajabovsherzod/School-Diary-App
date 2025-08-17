@@ -2,19 +2,8 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import {
-  DndContext,
-  DragEndEvent,
-  DragOverlay,
-  DragStartEvent,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  useDroppable,
-} from "@dnd-kit/core";
+import { useDroppable } from "@dnd-kit/core";
 import { IScheduleEntry } from "@/lib/api/schedule/schedule.types";
-import { useMoveOrSwapEntry } from "@/hooks/mutations/use-schedule-mutations";
 import {
   Table,
   TableBody,
@@ -67,17 +56,6 @@ export const ScheduleTable = ({
   selectedForDeletion,
   onToggleSelection,
 }: ScheduleTableProps) => {
-  const { mutate: moveOrSwap } = useMoveOrSwapEntry();
-  const [activeEntry, setActiveEntry] = useState<IScheduleEntry | null>(null);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    })
-  );
-
   const entriesByDayAndLesson = useMemo(() => {
     const grouped: Record<string, IScheduleEntry> = {};
     schedule.forEach((entry) => {
@@ -86,182 +64,113 @@ export const ScheduleTable = ({
     return grouped;
   }, [schedule]);
 
-  const handleDragStart = (event: DragStartEvent) => {
-    if (deletionMode) return; // O'chirish rejimida sudrashni o'chiramiz
-    if (event.active.data.current?.type === "entry") {
-      const entry = event.active.data.current?.entry as IScheduleEntry;
-      if (entry) setActiveEntry(entry);
-    }
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    setActiveEntry(null);
-    const { active, over } = event;
-
-    // Agar sudrash bekor qilinsa yoki element o'z joyiga qaytarilsa, hech narsa qilmaymiz
-    if (!over || active.id === over.id) {
-      return;
-    }
-
-    const sourceType = active.data.current?.type;
-    const overType = over.data.current?.type;
-
-    // Faqat jadvaldagi darsni sudraganda ishlaydi
-    if (sourceType !== "entry") {
-      return;
-    }
-
-    const sourceId = parseInt(active.id as string, 10);
-    let targetDay: number;
-    let targetLesson: number;
-
-    // Holat 1: Darsni boshqa dars ustiga tashlash (SWAP)
-    if (overType === "entry") {
-      const targetEntry = over.data.current?.entry as IScheduleEntry;
-      targetDay = targetEntry.dayOfWeek;
-      targetLesson = targetEntry.lessonNumber;
-    }
-    // Holat 2: Darsni bo'sh katakka tashlash (MOVE)
-    else if (overType === "empty") {
-      [targetDay, targetLesson] = (over.id as string).split("-").map(Number);
-    }
-    // Boshqa holatlar uchun chiqib ketamiz
-    else {
-      return;
-    }
-
-    if (!isNaN(sourceId) && !isNaN(targetDay) && !isNaN(targetLesson)) {
-      moveOrSwap({
-        classSlug: slug,
-        source: { type: "scheduled", id: sourceId },
-        targetDay,
-        targetLesson,
-      });
-    }
-  };
-
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
-      <div className="space-y-6">
-        {dayChunks.map((chunk, chunkIndex) => {
-          const dayNumbersInChunk = chunk.map((day) => days.indexOf(day) + 1);
+    <div className="space-y-6">
+      {dayChunks.map((chunk, chunkIndex) => {
+        const dayNumbersInChunk = chunk.map((day) => days.indexOf(day) + 1);
 
-          const maxLessonsForChunk = (() => {
-            const entriesInChunk = schedule.filter((entry) =>
-              dayNumbersInChunk.includes(entry.dayOfWeek)
-            );
-            if (entriesInChunk.length === 0) return 1;
-            const max = Math.max(...entriesInChunk.map((e) => e.lessonNumber));
-            return max + 1;
-          })();
-
-          return (
-            <div
-              key={chunkIndex}
-              className="overflow-hidden rounded-lg border shadow-sm"
-            >
-              <Table className="w-full table-fixed border-collapse bg-white">
-                <TableHeader>
-                  <TableRow className="hover:bg-primary/90">
-                    <TableHead className="w-28 border-b border-r bg-primary text-center font-semibold text-primary-foreground">
-                      Dars vaqti
-                    </TableHead>
-                    {chunk.map((day, dayIdx) => (
-                      <TableHead
-                        key={day}
-                        className={cn(
-                          "text-center bg-primary text-primary-foreground font-semibold border-b",
-                          dayIdx < chunk.length - 1 && "border-r"
-                        )}
-                      >
-                        {day}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {Array.from({ length: maxLessonsForChunk }).map(
-                    (_, lessonIndex) => {
-                      const lessonNumber = lessonIndex + 1;
-                      return (
-                        <TableRow
-                          key={lessonNumber}
-                          className="border-b last:border-b-0"
-                        >
-                          <TableCell className="text-center font-medium text-gray-600 border-r">
-                            {lessonNumber}-dars
-                          </TableCell>
-                          {chunk.map((_, dayIndexInChunk) => {
-                            const dayIndex = chunkIndex * 3 + dayIndexInChunk;
-                            const dayNumber = dayIndex + 1;
-                            const cellId = `${dayNumber}-${lessonNumber}`;
-                            const entry = entriesByDayAndLesson[cellId];
-
-                            const isDeletionCandidate =
-                              deletionMode &&
-                              entry &&
-                              entry.subjectId === deletionMode.subjectId;
-                            const isSelected =
-                              entry && selectedForDeletion.has(entry.id);
-
-                            return (
-                              <TableCell
-                                key={cellId}
-                                className={cn(
-                                  "p-0 h-12",
-                                  dayIndexInChunk < chunk.length - 1 &&
-                                    "border-r",
-                                  isDeletionCandidate &&
-                                    "ring-2 ring-destructive/50 ring-inset",
-                                  isSelected &&
-                                    "ring-destructive bg-destructive/10"
-                                )}
-                                onClick={() =>
-                                  isDeletionCandidate &&
-                                  onToggleSelection(entry.id)
-                                }
-                              >
-                                {entry ? (
-                                  isDeletionCandidate ? (
-                                    <div className="relative h-full w-full flex items-center justify-center p-1 text-center text-sm font-medium cursor-pointer">
-                                      <Checkbox
-                                        checked={isSelected}
-                                        className="absolute top-1 right-1 h-4 w-4"
-                                      />
-                                      {entry.subject.name}
-                                    </div>
-                                  ) : (
-                                    <EntryCell entry={entry} />
-                                  )
-                                ) : (
-                                  !deletionMode && <EmptyCell id={cellId} />
-                                )}
-                              </TableCell>
-                            );
-                          })}
-                        </TableRow>
-                      );
-                    }
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+        const maxLessonsForChunk = (() => {
+          const entriesInChunk = schedule.filter((entry) =>
+            dayNumbersInChunk.includes(entry.dayOfWeek)
           );
-        })}
-      </div>
+          if (entriesInChunk.length === 0) return 1;
+          const max = Math.max(...entriesInChunk.map((e) => e.lessonNumber));
+          return max + 1;
+        })();
 
-      <DragOverlay dropAnimation={null}>
-        {activeEntry ? (
-          <div className="h-full w-full flex items-center justify-center p-1 text-center text-sm font-medium cursor-grabbing rounded-sm bg-white shadow-2xl ring-2 ring-primary">
-            {activeEntry.subject.name}
+        return (
+          <div
+            key={chunkIndex}
+            className="overflow-hidden rounded-lg border shadow-sm"
+          >
+            <Table className="w-full table-fixed border-collapse bg-white">
+              <TableHeader>
+                <TableRow className="hover:bg-primary/90">
+                  <TableHead className="w-28 border-b border-r bg-primary text-center font-semibold text-primary-foreground">
+                    Dars vaqti
+                  </TableHead>
+                  {chunk.map((day, dayIdx) => (
+                    <TableHead
+                      key={day}
+                      className={cn(
+                        "text-center bg-primary text-primary-foreground font-semibold border-b",
+                        dayIdx < chunk.length - 1 && "border-r"
+                      )}
+                    >
+                      {day}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Array.from({ length: maxLessonsForChunk }).map(
+                  (_, lessonIndex) => {
+                    const lessonNumber = lessonIndex + 1;
+                    return (
+                      <TableRow
+                        key={lessonNumber}
+                        className="border-b last:border-b-0"
+                      >
+                        <TableCell className="text-center font-medium text-gray-600 border-r">
+                          {lessonNumber}-dars
+                        </TableCell>
+                        {chunk.map((_, dayIndexInChunk) => {
+                          const dayIndex = chunkIndex * 3 + dayIndexInChunk;
+                          const dayNumber = dayIndex + 1;
+                          const cellId = `${dayNumber}-${lessonNumber}`;
+                          const entry = entriesByDayAndLesson[cellId];
+
+                          const isDeletionCandidate =
+                            deletionMode &&
+                            entry &&
+                            entry.subjectId === deletionMode.subjectId;
+                          const isSelected =
+                            entry && selectedForDeletion.has(entry.id);
+
+                          return (
+                            <TableCell
+                              key={cellId}
+                              className={cn(
+                                "p-0 h-12",
+                                dayIndexInChunk < chunk.length - 1 &&
+                                  "border-r",
+                                isDeletionCandidate &&
+                                  "ring-2 ring-destructive/50 ring-inset",
+                                isSelected &&
+                                  "ring-destructive bg-destructive/10"
+                              )}
+                              onClick={() =>
+                                isDeletionCandidate &&
+                                onToggleSelection(entry.id)
+                              }
+                            >
+                              {entry ? (
+                                isDeletionCandidate ? (
+                                  <div className="relative h-full w-full flex items-center justify-center p-1 text-center text-sm font-medium cursor-pointer">
+                                    <Checkbox
+                                      checked={isSelected}
+                                      className="absolute top-1 right-1 h-4 w-4"
+                                    />
+                                    {entry.subject.name}
+                                  </div>
+                                ) : (
+                                  <EntryCell entry={entry} />
+                                )
+                              ) : (
+                                !deletionMode && <EmptyCell id={cellId} />
+                              )}
+                            </TableCell>
+                          );
+                        })}
+                      </TableRow>
+                    );
+                  }
+                )}
+              </TableBody>
+            </Table>
           </div>
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+        );
+      })}
+    </div>
   );
 };

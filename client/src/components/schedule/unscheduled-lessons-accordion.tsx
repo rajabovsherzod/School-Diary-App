@@ -20,23 +20,31 @@ interface UnscheduledLessonsAccordionProps {
 }
 
 // Kichik Draggable komponent
-const DraggableLesson = ({
-  lesson,
-  id,
-}: {
-  lesson: { subjectName: string; subjectId: number };
-  id: string;
-}) => {
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
-    id: id,
-    data: {
-      type: "unscheduled",
-      subject: { id: lesson.subjectId, name: lesson.subjectName },
-    }, // Ma'lumotni DND kontekstiga uzatamiz
-  });
+interface DraggableItemProps {
+  lesson: {
+    subjectName: string;
+    subjectId: number;
+  };
+  index: number; // Noyob ID uchun index qo'shamiz
+}
+
+const DraggableItem = ({ lesson, index }: DraggableItemProps) => {
+  const { attributes, listeners, setNodeRef, transform, isDragging } =
+    useDraggable({
+      // MUHIM O'ZGARISH: ID endi matn emas, to'g'ridan-to'g'ri fan IDsi (number)
+      // Bu butun drag-n-drop zanjiri uchun to'g'ri ma'lumotni ta'minlaydi.
+      id: lesson.subjectId,
+      data: {
+        type: "unscheduled",
+        // ID'ni noyob qilish uchun index'ni dataga qo'shamiz, lekin asosiy ID o'zgarmaydi
+        uniqueId: `${lesson.subjectId}-${index}`,
+        subject: { id: lesson.subjectId, name: lesson.subjectName },
+      },
+    });
 
   const style = {
-    transform: CSS.Translate.toString(transform),
+    // transform: CSS.Translate.toString(transform), // BU QATOR O'CHIRILADI
+    opacity: isDragging ? 0.5 : 1, // Sudralayotganda yarim shaffof qilish
   };
 
   return (
@@ -110,10 +118,13 @@ export const UnscheduledLessonsAccordion = ({
                 </h4>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                   {unscheduledLessons.map((lesson, index) => (
-                    <DraggableLesson
+                    <DraggableItem
                       key={`${lesson.subjectId}-${index}`}
-                      id={`unscheduled-${lesson.subjectId}-${index}`}
-                      lesson={lesson}
+                      lesson={{
+                        subjectId: lesson.subjectId,
+                        subjectName: lesson.subjectName,
+                      }}
+                      index={index}
                     />
                   ))}
                 </div>

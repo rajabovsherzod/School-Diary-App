@@ -59,6 +59,13 @@ class ScheduleController {
   };
 
   moveOrSwapEntry = async (req: Request, res: Response) => {
+    // DIAGNOSTIKA: So'rov controllerga yetib kelganini tekshirish
+    console.log(
+      `[ScheduleController] moveOrSwapEntry chaqirildi. Params: ${JSON.stringify(
+        req.params
+      )}, Body: ${JSON.stringify(req.body)}`
+    );
+
     // YECHIM: `slug` manzil parametrlaridan, qolgan ma'lumotlar tanadan olinadi.
     const { slug } = req.params;
     const body = req.body;

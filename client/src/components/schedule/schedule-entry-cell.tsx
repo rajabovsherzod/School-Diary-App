@@ -8,26 +8,12 @@ interface EntryCellProps {
   entry: IScheduleEntry;
 }
 
-export const EntryCell = ({ entry }: EntryCellProps) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef: setDraggableNodeRef,
-    isDragging,
-  } = useDraggable({
+// 1. Sudraladigan (Draggable) qism uchun alohida komponent
+const DraggableEntry = ({ entry }: EntryCellProps) => {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: entry.id.toString(),
     data: { entry, type: "entry" },
   });
-
-  const { setNodeRef: setDroppableNodeRef, isOver } = useDroppable({
-    id: entry.id.toString(),
-    data: { entry, type: "entry" },
-  });
-
-  const setNodeRef = (node: HTMLElement | null) => {
-    setDraggableNodeRef(node);
-    setDroppableNodeRef(node);
-  };
 
   return (
     <div
@@ -37,11 +23,30 @@ export const EntryCell = ({ entry }: EntryCellProps) => {
       className={cn(
         "h-full w-full flex items-center justify-center p-1 text-center text-sm font-medium cursor-grab select-none",
         "bg-white hover:bg-gray-50 transition-colors duration-150 rounded-sm",
-        isDragging && "opacity-0",
-        isOver && "ring-2 ring-primary ring-inset"
+        isDragging && "opacity-50"
       )}
     >
       {entry.subject.name}
+    </div>
+  );
+};
+
+// 2. Tashlanadigan (Droppable) konteyner va asosiy komponent
+export const EntryCell = ({ entry }: EntryCellProps) => {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `${entry.dayOfWeek}-${entry.lessonNumber}`,
+    data: { entry, type: "cell" },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "h-full w-full rounded-sm",
+        isOver && "ring-2 ring-primary ring-inset"
+      )}
+    >
+      <DraggableEntry entry={entry} />
     </div>
   );
 };

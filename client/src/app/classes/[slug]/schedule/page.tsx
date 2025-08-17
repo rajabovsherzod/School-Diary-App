@@ -14,9 +14,25 @@ import { ResponsiveSchedule } from "@/components/schedule/responsive-schedule";
 import { ConfirmationDialog } from "@/components/schedule/confirmation-dialog";
 import { TApiError } from "@/types/api-error";
 import { PageHeader } from "@/components/ui/page-header";
-import { CalendarPlus } from "lucide-react";
+import { CalendarPlus, GripVertical } from "lucide-react";
 import { UnscheduledLessonsAccordion } from "@/components/schedule/unscheduled-lessons-accordion";
-import { DndContext, DragEndEvent, DragStartEvent } from "@dnd-kit/core";
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  pointerWithin,
+} from "@dnd-kit/core";
+import { IScheduleEntry, ISubject } from "@/lib/api/schedule/schedule.types";
+
+// Sudralayotgan element uchun tip
+type TActiveItem =
+  | { type: "entry"; data: IScheduleEntry }
+  | { type: "unscheduled"; data: { id: number; name: string } };
 
 const SchedulePage = () => {
   const params = useParams();
@@ -30,6 +46,7 @@ const SchedulePage = () => {
 
   const [isConfirmOpen, setConfirmOpen] = useState(false);
   const [isAccordionOpen, setAccordionOpen] = useState(true);
+  const [activeItem, setActiveItem] = useState<TActiveItem | null>(null);
   const [deletionMode, setDeletionMode] = useState<{
     subjectId: number;
     count: number;
@@ -38,37 +55,78 @@ const SchedulePage = () => {
     new Set()
   );
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor)
+  );
+
   const handleDragStart = (event: DragStartEvent) => {
-    // Sudrash boshlanganda akkordeonni yopamiz
-    setAccordionOpen(false);
-    console.log("Drag started:", event.active.id);
+    if (deletionMode) return; // O'chirish rejimida DND ishlamaydi
+
+    const { active } = event;
+    const type = active.data.current?.type;
+
+    if (type === "entry") {
+      setActiveItem({ type: "entry", data: active.data.current.entry });
+    } else if (type === "unscheduled") {
+      setActiveItem({ type: "unscheduled", data: active.data.current.subject });
+    }
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
-    const overId = event.over?.id;
-    const activeId = event.active.id;
-    const activeData = event.active.data.current;
+    setActiveItem(null);
+    const { active, over } = event;
 
-    if (!overId || !activeData) return;
+    if (!over || !active) return;
 
-    // Faqat akkordeondan jadvalga tashlansa ishlaydi
-    if (
-      activeData.type === "unscheduled" &&
-      String(overId).startsWith("cell-")
-    ) {
-      const [, day, lesson] = String(overId).split("-");
-      moveOrSwap({
-        classSlug: slug,
-        source: {
-          type: "unscheduled",
-          id: activeData.subject.id,
-          subject: activeData.subject,
-        },
-        targetDay: parseInt(day, 10),
-        targetLesson: parseInt(lesson, 10),
-      });
+    // 1. Maqsad (target) katak ma'lumotlarini olamiz
+    const [targetDay, targetLesson] = String(over.id).split("-").map(Number);
+    if (isNaN(targetDay) || isNaN(targetLesson)) return;
+
+    // 2. Manba (source) ma'lumotlarini olamiz
+    const sourceType = active.data.current?.type as "entry" | "unscheduled";
+    const sourceId = Number(active.id); // ID har doim raqam bo'lishini ta'minlaymiz
+    if (!sourceType || isNaN(sourceId)) return;
+
+    // 3. O'z joyiga qaytarilsa, hech narsa qilmaymiz
+    if (sourceType === "entry") {
+      const sourceEntry = active.data.current?.entry as IScheduleEntry;
+      if (
+        sourceEntry.dayOfWeek === targetDay &&
+        sourceEntry.lessonNumber === targetLesson
+      ) {
+        return;
+      }
     }
-    // Kelajakda jadval ichidagi almashtirish uchun 'scheduled' tipi ham shu yerda boshqariladi
+
+    // 4. Backend uchun 'source' qismini tayyorlaymiz
+    const sourcePayload = {
+      type: sourceType === "entry" ? "scheduled" : "unscheduled",
+      id: sourceId,
+      ...(sourceType === "unscheduled" && {
+        subject: active.data.current?.subject,
+      }),
+    };
+
+    // 5. Agar biror darsning o'rniga qo'yilsa, o'sha darsning asl kunini olamiz
+    const overEntry = over.data.current?.entry as IScheduleEntry | undefined;
+    const displacedEntryOriginalDay = overEntry?.dayOfWeek;
+
+    // 6. Yakuniy payloadni yig'amiz
+    const payload = {
+      classSlug: slug,
+      source: sourcePayload,
+      targetDay,
+      targetLesson,
+      displacedEntryOriginalDay, // Agar bo'sh joyga qo'yilsa, bu 'undefined' bo'ladi
+    };
+
+    console.log("FRONTEND PAYLOAD:", JSON.stringify(payload, null, 2));
+    moveOrSwap(payload);
   };
 
   const handleStartDeletion = (subjectId: number, count: number) => {
@@ -131,7 +189,12 @@ const SchedulePage = () => {
   }
 
   return (
-    <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+    <DndContext
+      sensors={sensors}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      collisionDetection={pointerWithin} // Strategiyani o'zgartirdik
+    >
       <div className="mb-4">
         <PageHeader
           title={`${scheduleData?.class?.name || slug} uchun dars jadvali`}
@@ -153,32 +216,31 @@ const SchedulePage = () => {
             {isGenerating ? "Yaratilmoqda..." : "Jadvalni yaratish"}
           </Button>
         </PageHeader>
+
+        <ConfirmationDialog
+          isOpen={isConfirmOpen}
+          onClose={() => setConfirmOpen(false)}
+          onConfirm={handleConfirmGenerate}
+          title="Jadvalni yaratishni tasdiqlang"
+          description="Bu amal mavjud jadvalni o'chirib, fanlarga ajratilgan soatlar asosida yangisini yaratadi. Davom etishni xohlaysizmi?"
+        />
       </div>
 
-      <ConfirmationDialog
-        isOpen={isConfirmOpen}
-        onClose={() => setConfirmOpen(false)}
-        onConfirm={handleConfirmGenerate}
-        title="Jadvalni yaratishni tasdiqlang"
-        description={`Siz haqiqatdan ham "${slug}" sinfi uchun jadvalni qayta yaratmoqchimisiz? Mavjud jadval o'chiriladi.`}
-        isLoading={isGenerating}
-      />
-
-      {scheduleData && scheduleData.subjectDebts && (
+      {scheduleData && (
         <UnscheduledLessonsAccordion
           subjectDebts={scheduleData.subjectDebts}
           isOpen={isAccordionOpen}
-          onValueChange={(value) => setAccordionOpen(value === "item-1")}
+          onValueChange={(value) => setAccordionOpen(!!value)}
           onStartDeletion={handleStartDeletion}
         />
       )}
 
       {deletionMode && (
-        <div className="fixed bottom-4 right-4 z-50 flex items-center gap-3 rounded-lg bg-background p-4 shadow-lg border">
-          <p className="text-sm font-medium">
-            Tanlangan: {selectedForDeletion.size} / {deletionMode.count}
+        <div className="flex items-center justify-center gap-4 mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+          <p className="text-sm font-medium text-destructive">
+            Tanlanganlar: {selectedForDeletion.size} / {deletionMode.count}
           </p>
-          <Button variant="outline" size="sm" onClick={handleCancelDeletion}>
+          <Button onClick={handleCancelDeletion} variant="outline" size="sm">
             Bekor qilish
           </Button>
           <Button
@@ -207,6 +269,23 @@ const SchedulePage = () => {
           </p>
         </div>
       )}
+
+      <DragOverlay dropAnimation={null}>
+        {activeItem ? (
+          activeItem.type === "entry" ? (
+            <div className="h-full w-full flex items-center justify-center p-1 text-center text-sm font-medium cursor-grabbing rounded-sm bg-white shadow-2xl ring-2 ring-primary">
+              {activeItem.data.subject.name}
+            </div>
+          ) : (
+            <div className="flex items-center p-2 border rounded-md cursor-grabbing bg-white shadow-2xl ring-2 ring-primary touch-none">
+              <GripVertical className="h-5 w-5 mr-2 text-muted-foreground" />
+              <span className="flex-1 text-sm font-medium truncate">
+                {activeItem.data.name}
+              </span>
+            </div>
+          )
+        ) : null}
+      </DragOverlay>
     </DndContext>
   );
 };

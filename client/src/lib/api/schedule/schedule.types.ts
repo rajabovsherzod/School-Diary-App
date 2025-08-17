@@ -31,6 +31,7 @@ export interface IMoveOrSwapPayload {
   source: TMoveSource;
   targetDay: number;
   targetLesson: number;
+  displacedEntryOriginalDay?: number; // Qaysi kundan ko'chirilganini bilish uchun
 }
 
 export interface IGenericSuccessMessage {
