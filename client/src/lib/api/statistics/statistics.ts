@@ -2,13 +2,13 @@ import $axios from "../axios";
 import { ClassBasicInfo, DashboardStats } from "./statistics.types";
 
 export const getDashboardStats = async (): Promise<DashboardStats> => {
-  const { data } = await $axios.get<{ data: DashboardStats }>("/statistics");
+    const { data } = await $axios.get<{ data: DashboardStats }>("/api/statistics");
   return data.data;
 };
 
 export const getClassesWithoutSchedule = async (): Promise<ClassBasicInfo[]> => {
   const { data } = await $axios.get<{ data: ClassBasicInfo[] }>(
-    "/statistics/classes-without-schedule"
+    "/api/statistics/classes-without-schedule"
   );
   return data.data;
 };
